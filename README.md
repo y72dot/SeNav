@@ -1,6 +1,6 @@
 # SeNav
 
-![Version](https://img.shields.io/badge/version-2.0.0%20beta%205-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Vue](https://img.shields.io/badge/Vue-3.x-brightgreen) ![Vite](https://img.shields.io/badge/Vite-5.x-646CFF)
+![Version](https://img.shields.io/badge/version-2.0.0%20beta%206-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Vue](https://img.shields.io/badge/Vue-3.x-brightgreen) ![Vite](https://img.shields.io/badge/Vite-5.x-646CFF)
 
 ![SeNav.png](https://s2.loli.net/2022/07/15/FE6U2BJCynHDep8.jpg)
 
@@ -32,10 +32,11 @@ SeNav 是一个功能丰富、界面精美的浏览器起始页，采用 Vue 3 +
 - **响应式设计**：完美适配移动端和桌面端
 
 #### 🎨 个性化定制
-- **多种壁纸**：本地默认、每日必应、随机风景、随机动漫
-- **自定义壁纸**：支持上传自定义背景图片
+- **多种壁纸**：本地默认、每日必应、随机风景、随机动漫、随机风景2、随机二次元2
+- **自定义壁纸**：支持自定义背景图片URL，完全个性化定制
 - **壁纸效果**：可调节模糊度、遮罩效果
 - **主题切换**：支持浅色/深色主题模式
+- **壁纸管理**：8种壁纸选项，包含预留扩展位置
 
 #### 🔗 快捷方式管理
 - **自定义网站**：添加常用网站快捷方式
@@ -53,7 +54,8 @@ SeNav 是一个功能丰富、界面精美的浏览器起始页，采用 Vue 3 +
 - [x] 🎬 载入动画效果
 - [x] 🕐 时间及天气显示
 - [x] 🔗 快捷方式自定义
-- [x] 🖼️ 网站背景自定义
+- [x] 🖼️ 网站背景自定义（8种壁纸选项）
+- [x] 🎨 自定义壁纸URL支持
 - [x] 💾 数据备份及恢复
 - [x] 📱 移动端完美适配
 - [x] 🔍 多搜索引擎切换
@@ -61,6 +63,7 @@ SeNav 是一个功能丰富、界面精美的浏览器起始页，采用 Vue 3 +
 - [x] 📝 便签功能
 - [x] 🌙 深色/浅色主题
 - [x] ⌨️ 键盘快捷键支持
+- [x] 🔧 壁纸功能优化与修复
 - [ ] 📖 一言功能
 - [ ] 🔖 书签管理
 
@@ -205,7 +208,14 @@ VITE_WEATHER_KEY = "..."                # 天气API密钥
 1. 点击设置按钮进入设置页面
 2. **基础设置**：搜索引擎、跳转方式等
 3. **个性调整**：壁纸、主题、时钟样式等
+   - **壁纸选项**：8种壁纸类型可选（本地、必应、随机风景、随机动漫、随机风景2、随机二次元2、预留、自定义）
+   - **自定义壁纸**：支持输入图片URL，实现完全个性化背景
 4. **其他设置**：数据备份、重置等
+
+> 💡 **壁纸功能说明**：
+> - 选择"自定义壁纸"选项后，可输入任意图片URL作为背景
+> - 支持常见图片格式（jpg、png、webp等）
+> - 建议使用高质量图片以获得最佳显示效果
 
 ## 🔄 数据备份与恢复
 
