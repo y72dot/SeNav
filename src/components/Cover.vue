@@ -43,12 +43,27 @@ const setBgUrl = () => {
       break;
     }
     case 2:
-      bgUrl.value = "https://api.cwlm.xyz/fj.php";
+      // 随机风景 - 使用Picsum Photos (更快更稳定)
+      bgUrl.value = "https://picsum.photos/1920/1080?random=" + Math.floor(Math.random() * 1000);
       break;
     case 3:
-      bgUrl.value = "https://www.loliapi.com/acg/";
+      // 随机动漫 - 使用樱花API (稳定的二次元图片服务)
+      bgUrl.value = "https://www.dmoe.cc/random.php";
       break;
     case 4:
+      // 随机风景2 - 使用CWLM API (备用风景服务)
+      bgUrl.value = "https://api.cwlm.xyz/fj.php";
+      break;
+    case 5:
+      // 随机二次元2 - 使用CWLM API (备用二次元服务)
+      bgUrl.value = "https://api.cwlm.xyz/ecy.php";
+      break;
+    case 6:
+      // 预留位置
+      bgUrl.value = "https://api.cwlm.xyz/ecy.php";
+      break;
+    case 7:
+      // 自定义壁纸
       bgUrl.value = set.backgroundCustom;
       break;
     default:{
