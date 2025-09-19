@@ -63,10 +63,6 @@ SeNav 是一个功能丰富、界面精美的浏览器起始页，采用 Vue 3 +
 - [x] 📝 便签功能
 - [x] 🌙 深色/浅色主题
 - [x] ⌨️ 键盘快捷键支持
-- [x] 🔧 壁纸功能优化与修复
-- [ ] 📖 一言功能
-- [ ] 🔖 书签管理
-
 
 ## 🚀 快速开始
 
@@ -114,6 +110,7 @@ pnpm build
 ### 🌐 部署方式
 
 #### 静态部署
+
 构建完成后，将 `dist` 目录下的文件上传至您的服务器即可。
 
 #### 平台部署
@@ -125,27 +122,7 @@ pnpm build
 
 ### 基础配置
 
-在项目根目录的 `.env` 文件中可以修改以下配置：
-
-```bash
-# 站点基本信息
-VITE_SITE_TITLE = "SeNav"          # 网站标题
-VITE_SITE_ANTHOR = "無名"               # 作者
-VITE_SITE_KEYWORDS = "..."              # 网站关键词
-VITE_SITE_DES = "..."                   # 网站描述
-VITE_SITE_LOGO = "/favicon.png"         # 网站图标
-VITE_SITE_APPLE_LOGO = "/logo/logo.png" # Apple设备图标
-VITE_SITE_COPYRIGHTLINK = "..."         # 版权链接
-
-# 界面文本
-VITE_WELCOME_TEXT = "欢迎访问本站"      # 欢迎语
-VITE_INPUT_TIP = "想要搜点什么"         # 搜索框提示文字
-
-# 其他配置
-VITE_ICP = "豫ICP备2022018134号-1"     # ICP备案号（可选）
-VITE_COPYRIGHT_VISIBLE = "true"         # 版权信息可见性（true/false）
-VITE_WEATHER_KEY = "..."                # 天气API密钥
-```
+在项目根目录的 `.env` 文件中可以修改配置
 
 ### 🔧 天气API配置
 
@@ -215,7 +192,6 @@ VITE_WEATHER_KEY = "..."                # 天气API密钥
 > 💡 **壁纸功能说明**：
 > - 选择"自定义壁纸"选项后，可输入任意图片URL作为背景
 > - 支持常见图片格式（jpg、png、webp等）
-> - 建议使用高质量图片以获得最佳显示效果
 
 ## 🔄 数据备份与恢复
 
@@ -234,12 +210,27 @@ VITE_WEATHER_KEY = "..."                # 天气API密钥
 
 项目集成了以下第三方API服务：
 
-| 服务 | 用途 | 官网 |
-|------|------|------|
-| [高德地图API](https://lbs.amap.com/) | 天气信息获取 | https://lbs.amap.com/ |
-| [小歪API](https://api.ixiaowai.cn/) | 背景图片服务 | https://api.ixiaowai.cn/ |
-| [缙哥哥API](https://www.dujin.org/3618.html) | 备用API服务 | https://www.dujin.org/3618.html |
-| [Hitokoto 一言](https://hitokoto.cn/) | 一言服务（开发中） | https://hitokoto.cn/ |
+| 服务 | 用途 | 官网 | 使用场景 |
+|------|------|------|----------|
+| [高德地图API](https://lbs.amap.com/) | 天气信息获取 | https://lbs.amap.com/ | 实时天气数据 |
+| [缙哥哥API](https://www.dujin.org/3618.html) | 必应每日壁纸 | https://www.dujin.org/3618.html | 壁纸选项1 |
+| [Picsum Photos](https://picsum.photos/) | 随机风景图片 | https://picsum.photos/ | 壁纸选项2 |
+| [樱花API](https://www.dmoe.cc/) | 随机动漫图片 | https://www.dmoe.cc/ | 壁纸选项3 |
+| [CWLM API](https://api.cwlm.xyz/) | 随机图片服务 | https://api.cwlm.xyz/ | 壁纸选项4、5、6 |
+| [Hitokoto 一言](https://hitokoto.cn/) | 一言服务（开发中） | https://hitokoto.cn/ | 随机语句 |
+
+### 🖼️ 壁纸API详细说明
+
+| 壁纸选项 | API地址 | 描述 | 特点 |
+|----------|---------|------|------|
+| 本地壁纸 | `/background/bg*.jpg` | 本地静态图片 | 加载速度快，无网络依赖 |
+| 必应壁纸 | `https://api.dujin.org/bing/` | 必应每日精选壁纸 | 高质量，每日更新 |
+| 随机风景 | `https://picsum.photos/1920/1080` | Picsum随机风景图 | 稳定快速，质量优秀 |
+| 随机动漫 | `https://www.dmoe.cc/random.php` | 樱花API二次元图片 | 动漫风格，内容丰富 |
+| 随机风景2 | `https://api.cwlm.xyz/fj.php` | CWLM风景API | 备用风景服务 |
+| 随机二次元2 | `https://api.cwlm.xyz/ecy.php` | CWLM二次元API | 备用动漫服务 |
+| 预留位置 | `https://api.cwlm.xyz/ecy.php` | 临时使用CWLM API | 为未来扩展预留 |
+| 自定义壁纸 | 用户输入URL | 支持任意图片链接 | 完全个性化定制 |
 
 ## 🤝 贡献指南
 
