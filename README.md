@@ -5,7 +5,7 @@
 ![SeNav.png](https://s2.loli.net/2022/07/15/FE6U2BJCynHDep8.jpg)
 
 > ⚠️ **项目开发中**  
-> 快速预览：[https://y72dot.github.io/SeNav/](https://y72dot.github.io/SeNav/)
+> 快速预览：[https://y72dot.github.io/SeNav/](https://y72dot.github.io/SeNav/)  
 > 本项目正在进行开发，部分功能可能不稳定。如需使用稳定版本，请访问 [原版本](https://github.com/imsyy/SNav)
 
 ## 📖 项目介绍
