@@ -4,12 +4,12 @@
 
 ![SeNav.png](https://s2.loli.net/2022/07/15/FE6U2BJCynHDep8.jpg)
 
-> ⚠️ **项目重构中**  
-> 本项目正在进行重构，部分功能可能不稳定。如需使用稳定版本，请访问 [原版本](https://github.com/imsyy/home)
+> ⚠️ **项目开发中**  
+> 本项目正在进行开发，部分功能可能不稳定。如需使用稳定版本，请访问 [原版本](https://github.com/imsyy/SNav)
 
 ## 📖 项目介绍
 
-SeNav 是一个功能丰富、界面精美的浏览器起始页，采用 Vue 3 + Vite 构建。它不仅提供了简洁优雅的界面设计，还集成了多种实用功能，让您的浏览体验更加高效便捷。
+SeNav 基于[SNav](https://github.com/imsyy/SNav)开发，是一个功能丰富、界面精美的浏览器起始页，采用 Vue 3 + Vite 构建。它不仅提供了简洁优雅的界面设计，还集成了多种实用功能，让您的浏览体验更加高效便捷。
 
 ### 🎯 核心特性
 
@@ -270,14 +270,12 @@ pnpm build
 
 ## 🙏 致谢
 
-- 感谢 [青柠起始页](https://limestart.cn/) 提供的设计灵感
+- 感谢 [imsyy/SNav](https://github.com/imsyy/SNav) 提供的开源项目
 - 感谢所有贡献者的支持与帮助
 - 感谢开源社区提供的优秀工具和库
 
 <div align="center">
 
 **如果这个项目对你有帮助，请给个 ⭐ Star 支持一下！**
-
-[![Star History Chart](https://api.star-history.com/svg?repos=imsyy/SNav&type=Date)](https://star-history.com/#imsyy/SNav&Date)
 
 </div>

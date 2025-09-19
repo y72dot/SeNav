@@ -92,12 +92,41 @@ const mainPressKeyboard = (event) => {
   
   // 回车或空格
   if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+    // 检查是否在搜索框中
+    const mainInput = document.getElementById("main-input");
+    const isInputFocused = document.activeElement === mainInput;
+    
+    // 如果搜索框已聚焦且输入的是空格，不处理（让输入框正常处理空格）
+    if (isInputFocused && event.key === ' ') {
+      return;
+    }
+    
     console.log('触发搜索框聚焦');
     // focus 元素
-    const mainInput = document.getElementById("main-input");
     status.setSiteStatus("focus");
     mainInput?.focus();
     // 只在处理搜索框聚焦时阻止默认行为
+    event.preventDefault();
+  }
+  
+  // 斜杠键 / 聚焦搜索框并填入 /
+  if (event.key === '/') {
+    // 检查是否在搜索框中
+    const mainInput = document.getElementById("main-input");
+    const isInputFocused = document.activeElement === mainInput;
+    
+    // 如果搜索框已聚焦，让输入框正常处理斜杠
+    if (isInputFocused) {
+      return;
+    }
+    
+    console.log('斜杠键触发搜索框聚焦并填入/');
+    // focus 元素
+    status.setSiteStatus("focus");
+    // 设置搜索框内容为 /
+    status.setSearchInputValue('/');
+    mainInput?.focus();
+    // 阻止默认行为
     event.preventDefault();
   }
 };

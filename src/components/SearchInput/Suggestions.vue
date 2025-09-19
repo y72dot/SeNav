@@ -19,6 +19,21 @@
           @after-leave="changeSuggestionsHeights"
         >
           <div v-if="searchKeyword !== null" class="special-result" ref="specialallResultsRef">
+            <!-- 命令建议 -->
+            <div
+              v-if="searchKeywordType === 'command'"
+              class="s-result command-result"
+              v-for="cmd in commandSuggestions"
+              :key="cmd.command"
+              :data-command="cmd.command"
+              @click.stop="executeCommand(cmd.command)"
+            >
+              <SvgIcon iconName="icon-code" />
+              <div class="command-info">
+                <span class="command-name">{{ cmd.command }}</span>
+                <span class="command-desc">{{ cmd.description }}</span>
+              </div>
+            </div>
             <!-- 快捷翻译 -->
             <div
               v-if="searchKeywordType === 'text'"
@@ -30,7 +45,7 @@
             </div>
             <!-- 直接访问 -->
             <div
-              v-if="searchKeywordType !== 'text'"
+              v-if="searchKeywordType !== 'text' && searchKeywordType !== 'command'"
               class="s-result"
               @click.stop="toSearch(searchKeyword, searchKeywordType === 'email' ? 3 : 4)"
             >
@@ -49,7 +64,7 @@
           @after-leave="changeSuggestionsHeights"
         >
           <div
-            v-if="searchKeyword !== null && searchSuggestionsData[0]"
+            v-if="searchKeyword !== null && searchSuggestionsData[0] && searchKeywordType !== 'command'"
             class="all-result"
             ref="allResultsRef"
           >
@@ -76,10 +91,11 @@ import { statusStore, setStore } from "@/stores";
 import { getSearchSuggestions } from "@/api";
 import debounce from "@/utils/debounce";
 import identifyInput from "@/utils/identifyInput";
+import { getCommandSuggestions, executeCommand as execCommand, getTabCompletion, getExactCommand } from "@/utils/commandUtils";
 
 const set = setStore();
 const status = statusStore();
-const emit = defineEmits(["toSearch"]);
+const emit = defineEmits(["toSearch", "commandExecuted", "tabCompletion"]);
 
 // 搜索关键字
 const searchKeyword = ref(null);
@@ -87,6 +103,8 @@ const searchKeyword = ref(null);
 const searchKeywordType = ref("text");
 // 搜索建议数据
 const searchSuggestionsData = ref([]);
+// 命令建议数据
+const commandSuggestions = ref([]);
 // 搜索建议元素
 const specialallResultsRef = ref(null);
 const allResultsRef = ref(null);
@@ -101,50 +119,144 @@ const props = defineProps({
   },
 });
 
-// 搜索框联想
-const keywordsSearch = debounce((val) => {
+// 执行命令
+const executeCommand = (command) => {
+  const result = execCommand(command);
+  emit("commandExecuted", result);
+  // 清空搜索框
+  searchKeyword.value = null;
+  commandSuggestions.value = [];
+};
+
+// 处理TAB补全
+const handleTabCompletion = () => {
+  if (searchKeywordType.value === 'command') {
+    const completion = getTabCompletion(searchKeyword.value);
+    if (completion) {
+      emit("tabCompletion", completion);
+      return true;
+    }
+  }
+  return false;
+};
+
+// 搜索框联想 - 为命令提示移除延迟，为搜索建议保留少量延迟
+const keywordsSearch = (val) => {
   const searchValue = val?.trim();
   // 是否为空
   if (!searchValue || searchValue === "") {
     searchKeyword.value = null;
+    commandSuggestions.value = [];
+    searchSuggestionsData.value = [];
     return false;
   }
   // 关闭切换搜索引擎
   status.setEngineChangeStatus(false);
   // 赋值关键字
   searchKeyword.value = searchValue;
-  // 若为文字
-  if (searchKeyword.value) {
-    console.log(val + "的搜索建议");
-    // 调用搜索建议
-    getSearchSuggestions(searchValue)
-      .then((res) => {
-        console.log(res);
-        // 写入结果
-        searchSuggestionsData.value = Array.from(res);
-        // 计算高度
-        nextTick().then(() => {
-          changeSuggestionsHeights();
+  // 识别输入类型
+  searchKeywordType.value = identifyInput(searchValue);
+  
+  // 若为命令 - 即时显示，无延迟
+  if (searchKeywordType.value === 'command') {
+    console.log(val + "的命令建议");
+    // 获取命令建议
+    commandSuggestions.value = getCommandSuggestions(searchValue);
+    // 清空搜索建议
+    searchSuggestionsData.value = [];
+    // 计算高度
+    nextTick().then(() => {
+      changeSuggestionsHeights();
+    });
+  } else {
+    // 清空命令建议
+    commandSuggestions.value = [];
+    // 若为文字，获取搜索建议 - 保留少量延迟
+    if (searchKeywordType.value === 'text') {
+      console.log(val + "的搜索建议");
+      // 调用搜索建议
+      getSearchSuggestions(searchValue)
+        .then((res) => {
+          console.log(res);
+          // 确保res是数组，写入结果
+          searchSuggestionsData.value = Array.isArray(res) ? res : [];
+          // 计算高度
+          nextTick().then(() => {
+            changeSuggestionsHeights();
+          });
+        })
+        .catch((error) => {
+          // 清空结果
+          searchSuggestionsData.value = [];
+          console.error("处理搜索建议发生错误：", error);
         });
-      })
-      .catch((error) => {
-        // 清空结果
-        searchSuggestionsData.value = [];
-        console.error("处理搜索建议发生错误：", error);
+    } else {
+      // 对于URL和邮箱，清空搜索建议
+      searchSuggestionsData.value = [];
+      // 计算高度
+      nextTick().then(() => {
+        changeSuggestionsHeights();
       });
+    }
   }
-}, 300);
+};
+
+// 为搜索建议添加防抖，但命令提示不使用防抖
+const debouncedSearchSuggestions = debounce((val) => {
+  const searchValue = val?.trim();
+  if (!searchValue || searchValue === "") {
+    return false;
+  }
+  
+  const inputType = identifyInput(searchValue);
+  // 只对非命令类型使用防抖
+  if (inputType !== 'command') {
+    keywordsSearch(val);
+  }
+}, 200);
 
 // 响应键盘事件
 const keyboardEvents = (keyCode, event) => {
   try {
     // 获取元素
     const mainInput = document.getElementById("main-input");
+    
+    // 9 TAB键 - 处理命令自动补全
+    if (keyCode === 9) {
+      event.preventDefault();
+      if (handleTabCompletion()) {
+        return;
+      }
+    }
+    
     // 38 上 / 40 下
     if (keyCode === 38 || keyCode === 40) {
       // 阻止默认事件
       event.preventDefault();
-      if (mainInput && allResultsRef.value && searchSuggestionsData.value[0]) {
+      
+      // 处理命令建议导航
+      if (searchKeywordType.value === 'command' && commandSuggestions.value.length > 0) {
+        const commandItems = document.querySelectorAll(".command-result");
+        if (commandItems.length > 0) {
+          // 获取当前已聚焦的元素
+          const focusedItem = document.querySelector(".command-result.focus");
+          // 确定当前聚焦的元素在列表中的索引
+          const currentIndex = Array.from(commandItems).indexOf(focusedItem);
+          // 移除所有元素的选中状态
+          commandItems.forEach((item) => item.classList.toggle("focus", false));
+          // 计算下一个要聚焦的元素的索引
+          let nextIndex = keyCode === 38 ? currentIndex - 1 : currentIndex + 1;
+          // 确保索引不越界
+          nextIndex = Math.max(0, Math.min(nextIndex, commandItems.length - 1));
+          // 操作元素
+          if (nextIndex !== -1) {
+            commandItems[nextIndex].classList.toggle("focus", true);
+            mainInput.value = commandItems[nextIndex].dataset.command;
+          }
+        }
+      } 
+      // 处理搜索建议导航
+      else if (mainInput && allResultsRef.value && searchSuggestionsData.value[0]) {
         const suggestionItems = allResultsRef.value.querySelectorAll(".s-result");
         if (suggestionItems.length > 0) {
           // 获取当前已聚焦的元素
@@ -167,6 +279,27 @@ const keyboardEvents = (keyCode, event) => {
     }
     // 13 回车
     if (keyCode === 13) {
+      // 如果是命令类型
+      if (searchKeywordType.value === 'command') {
+        // 首先检查是否有聚焦的命令项
+        const focusedCommand = document.querySelector(".command-result.focus");
+        if (focusedCommand) {
+          executeCommand(focusedCommand.dataset.command);
+          return;
+        }
+        
+        // 如果没有聚焦项，检查输入的命令是否完整匹配
+        const exactCommand = getExactCommand(mainInput.value);
+        if (exactCommand) {
+          executeCommand(exactCommand.command);
+          return;
+        }
+        
+        // 如果是命令但不完整，不触发搜索，直接返回
+        return;
+      }
+      
+      // 非命令类型才触发搜索
       toSearch(mainInput.value, 1);
     }
   } catch (error) {
@@ -199,15 +332,21 @@ watch(
       // 清空结果
       searchSuggestionsData.value = [];
       // 判断类型
-      searchKeywordType.value = identifyInput(val);
-      // 调用搜索结果
-      keywordsSearch(val);
+      const inputType = identifyInput(val);
+      searchKeywordType.value = inputType;
+      
+      // 命令类型立即执行，其他类型使用防抖
+      if (inputType === 'command') {
+        keywordsSearch(val);
+      } else {
+        debouncedSearchSuggestions(val);
+      }
     }
   },
 );
 
 // 暴露方法
-defineExpose({ keyboardEvents });
+defineExpose({ keyboardEvents, handleTabCompletion });
 </script>
 
 <style lang="scss" scoped>
@@ -230,7 +369,8 @@ defineExpose({ keyboardEvents });
 
   .all-result,
   .special-result {
-    .s-result {
+    .s-result,
+    .command-item {
       cursor: pointer;
       box-sizing: border-box;
       display: flex;
@@ -247,6 +387,18 @@ defineExpose({ keyboardEvents });
       }
       .text {
         width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .command-name {
+        font-weight: 500;
+        color: var(--main-color);
+        margin-right: 8px;
+      }
+      .command-desc {
+        opacity: 0.7;
+        font-size: 12px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;

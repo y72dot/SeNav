@@ -1,0 +1,38 @@
+{
+  "commands": [
+    {
+      "command": "/test",
+      "description": "测试命令1",
+      "usage": "/test [参数]",
+      "category": "测试",
+      "examples": [
+        "/test hello",
+        "/test world"
+      ]
+    },
+    {
+      "command": "/test2",
+      "description": "测试命令2",
+      "usage": "/test2 [选项]",
+      "category": "测试",
+      "examples": [
+        "/test2 -v",
+        "/test2 --help"
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "name": "测试",
+      "description": "测试用命令",
+      "color": "#007bff"
+    }
+  ],
+  "settings": {
+    "caseSensitive": false,
+    "maxSuggestions": 10,
+    "showDescription": true,
+    "showUsage": true,
+    "showExamples": false
+  }
+}

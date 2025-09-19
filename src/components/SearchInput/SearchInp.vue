@@ -52,7 +52,13 @@
     <!-- 搜索引擎切换 -->
     <SearchEngine />
     <!-- 搜索建议 -->
-    <Suggestions ref="suggestionsRef" :keyWord="status.searchInputValue" @toSearch="toSearch" />
+    <Suggestions 
+      ref="suggestionsRef" 
+      :keyWord="status.searchInputValue" 
+      @toSearch="toSearch" 
+      @commandExecuted="handleCommandExecuted"
+      @tabCompletion="handleTabCompletion"
+    />
   </div>
 </template>
 
@@ -184,6 +190,29 @@ const handleInput = (event) => {
     status.setSearchInputValue('');
     closeSearchInput(false);
   }
+};
+
+// 处理命令执行结果
+const handleCommandExecuted = (result) => {
+  console.log("命令执行结果：", result);
+  if (result.success) {
+    $message.success(result.message || "命令执行成功");
+  } else {
+    $message.error(result.message || "命令执行失败");
+  }
+  // 关闭搜索框
+  closeSearchInput(false);
+};
+
+// 处理TAB补全
+const handleTabCompletion = (completion) => {
+  console.log("TAB补全：", completion);
+  // 更新搜索框内容
+  status.setSearchInputValue(completion);
+  // 保持焦点
+  nextTick(() => {
+    searchInputRef.value?.focus();
+  });
 };
 </script>
 
