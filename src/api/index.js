@@ -32,17 +32,18 @@ export const getSearchSuggestions = async (keyWord) => {
   try {
     const encodedKeyword = encodeURIComponent(keyWord);
     const response = await fetchJsonp(
-      `https://suggestion.baidu.com/su?wd=${encodedKeyword}`,
+      `https://suggestion.baidu.com/su?wd=${encodedKeyword}&cb=json`,
       {
-        // 回调参数名，让fetch-jsonp自动生成
+        // 指定回调函数名为json，与百度API期望的一致
         jsonpCallback: "cb",
+        jsonpCallbackFunction: "json",
         // 增加超时时间
         timeout: 5000,
       },
     );
     const data = await response.json();
     // 确保返回数组，避免null迭代错误
-    return Array.isArray(data.s) ? data.s : [];
+    return Array.isArray(data?.s) ? data.s : [];
   } catch (error) {
     console.error("处理搜索建议发生错误：", error);
     // 返回空数组而不是null，避免迭代错误

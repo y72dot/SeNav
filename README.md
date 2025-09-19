@@ -5,11 +5,12 @@
 ![SeNav.png](https://s2.loli.net/2022/07/15/FE6U2BJCynHDep8.jpg)
 
 > ⚠️ **项目开发中**  
+> 快速预览：[https://y72dot.github.io/SeNav/](https://y72dot.github.io/SeNav/)
 > 本项目正在进行开发，部分功能可能不稳定。如需使用稳定版本，请访问 [原版本](https://github.com/imsyy/SNav)
 
 ## 📖 项目介绍
 
-SeNav 基于[SNav](https://github.com/imsyy/SNav)开发，是一个功能丰富、界面精美的浏览器起始页，采用 Vue 3 + Vite 构建。它不仅提供了简洁优雅的界面设计，还集成了多种实用功能，让您的浏览体验更加高效便捷。
+SeNav 基于 [SNav](https://github.com/imsyy/SNav) 开发，是一个功能丰富、界面精美的浏览器起始页，采用 Vue 3 + Vite 构建。它不仅提供了简洁优雅的界面设计，还集成了多种实用功能，让您的浏览体验更加高效便捷。
 
 ### 🎯 核心特性
 
