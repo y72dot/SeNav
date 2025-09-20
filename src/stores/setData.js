@@ -39,6 +39,10 @@ const useSetDataStore = defineStore("setData", {
       showWeather: false,
       // 是否显示搜索建议
       showSuggestions: true,
+      // 是否显示搜索建议（搜索联想）
+      showSearchSuggestions: true,
+      // 是否显示其他建议（快捷翻译、直接访问、命令建议）
+      showOtherSuggestions: true,
       // 跳转方式
       // open 新标签页 / href 当前页面
       urlJumpType: "open",

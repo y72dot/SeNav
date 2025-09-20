@@ -18,7 +18,7 @@
           @after-enter="changeSuggestionsHeights"
           @after-leave="changeSuggestionsHeights"
         >
-          <div v-if="searchKeyword !== null" class="special-result" ref="specialallResultsRef">
+          <div v-if="searchKeyword !== null && set.showOtherSuggestions" class="special-result" ref="specialallResultsRef">
             <!-- 命令建议 -->
             <div
               v-if="searchKeywordType === 'command'"
@@ -64,7 +64,7 @@
           @after-leave="changeSuggestionsHeights"
         >
           <div
-            v-if="searchKeyword !== null && searchSuggestionsData[0] && searchKeywordType !== 'command'"
+            v-if="searchKeyword !== null && searchSuggestionsData[0] && searchKeywordType !== 'command' && set.showSearchSuggestions"
             class="all-result"
             ref="allResultsRef"
           >
@@ -158,7 +158,7 @@ const keywordsSearch = (val) => {
   searchKeywordType.value = identifyInput(searchValue);
   
   // 若为命令 - 即时显示，无延迟
-  if (searchKeywordType.value === 'command') {
+  if (searchKeywordType.value === 'command' && set.showOtherSuggestions) {
     console.log(val + "的命令建议");
     // 获取命令建议
     commandSuggestions.value = getCommandSuggestions(searchValue);
@@ -172,7 +172,7 @@ const keywordsSearch = (val) => {
     // 清空命令建议
     commandSuggestions.value = [];
     // 若为文字，获取搜索建议 - 保留少量延迟
-    if (searchKeywordType.value === 'text') {
+    if (searchKeywordType.value === 'text' && set.showSearchSuggestions) {
       console.log(val + "的搜索建议");
       // 调用搜索建议
       getSearchSuggestions(searchValue)
@@ -191,7 +191,7 @@ const keywordsSearch = (val) => {
           console.error("处理搜索建议发生错误：", error);
         });
     } else {
-      // 对于URL和邮箱，清空搜索建议
+      // 对于URL和邮箱，或者关闭了搜索建议，清空搜索建议
       searchSuggestionsData.value = [];
       // 计算高度
       nextTick().then(() => {
@@ -336,9 +336,9 @@ watch(
       searchKeywordType.value = inputType;
       
       // 命令类型立即执行，其他类型使用防抖
-      if (inputType === 'command') {
+      if (inputType === 'command' && set.showOtherSuggestions) {
         keywordsSearch(val);
-      } else {
+      } else if (inputType !== 'command' && (set.showSearchSuggestions || set.showOtherSuggestions)) {
         debouncedSearchSuggestions(val);
       }
     }

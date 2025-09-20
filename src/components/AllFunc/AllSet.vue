@@ -87,6 +87,20 @@
           </n-card>
           <n-card class="set-item">
             <div class="name">
+              <span class="title">搜索联想</span>
+              <span class="tip">是否显示搜索联想建议</span>
+            </div>
+            <n-switch v-model:value="showSearchSuggestions" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">其他搜索建议</span>
+              <span class="tip">是否显示快捷翻译、直接访问、命令建议等</span>
+            </div>
+            <n-switch v-model:value="showOtherSuggestions" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
               <span class="title">跳转方式</span>
               <span class="tip">全站链接跳转方式</span>
             </div>
@@ -282,6 +296,8 @@ const {
   showZeroTime,
   use12HourFormat,
   showSuggestions,
+  showSearchSuggestions,
+  showOtherSuggestions,
   urlJumpType,
   timeStyle,
 } = storeToRefs(set);
