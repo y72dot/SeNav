@@ -19,18 +19,35 @@
           @after-leave="changeSuggestionsHeights"
         >
           <div v-if="searchKeyword !== null && set.showOtherSuggestions" class="special-result" ref="specialallResultsRef">
+            <!-- iframe 命令建议 -->
+            <div
+              v-if="searchKeywordType === 'iframe' || searchKeywordType === 'iframe-partial'"
+              class="s-result iframe-result"
+              @click.stop="searchKeywordType === 'iframe' ? openIframeViewer() : null"
+            >
+              <SvgIcon iconName="icon-link" />
+              <div class="command-info">
+                <span class="command-name">{{ searchKeywordType === 'iframe' ? '打开网页' : 'iframe 命令' }}</span>
+                <span class="command-desc">
+                  {{ searchKeywordType === 'iframe' ? 
+                     `在浮窗中打开：${getIframeUrl(searchKeyword)}` : 
+                     '输入完整的 /iframe 网址 来打开网页' 
+                  }}
+                </span>
+              </div>
+            </div>
             <!-- 命令建议 -->
             <div
-              v-if="searchKeywordType === 'command'"
+              v-if="searchKeywordType === 'command' || searchKeywordType === 'command-partial'"
               class="s-result command-result"
               v-for="cmd in commandSuggestions"
-              :key="cmd.command"
-              :data-command="cmd.command"
-              @click.stop="executeCommand(cmd.command)"
+              :key="cmd.name"
+              :data-command="cmd.name"
+              @click.stop="executeCommand(cmd.name)"
             >
               <SvgIcon iconName="icon-code" />
               <div class="command-info">
-                <span class="command-name">{{ cmd.command }}</span>
+                <span class="command-name">{{ cmd.name }}</span>
                 <span class="command-desc">{{ cmd.description }}</span>
               </div>
             </div>
@@ -82,6 +99,13 @@
       </n-scrollbar>
     </div>
   </Transition>
+  
+  <!-- IframeViewer 组件 -->
+  <IframeViewer
+    :url="iframeUrl"
+    :visible="showIframeViewer"
+    @close="closeIframeViewer"
+  />
 </template>
 
 <script setup>
@@ -91,7 +115,8 @@ import { statusStore, setStore } from "@/stores";
 import { getSearchSuggestions } from "@/api";
 import debounce from "@/utils/debounce";
 import identifyInput from "@/utils/identifyInput";
-import { getCommandSuggestions, executeCommand as execCommand, getTabCompletion, getExactCommand } from "@/utils/commandUtils";
+import { getCommandSuggestions, executeCommand as execCommand, getTabCompletion, identifyCommand } from "@/utils/commandRegistry";
+import IframeViewer from "@/components/IframeViewer.vue";
 
 const set = setStore();
 const status = statusStore();
@@ -105,6 +130,9 @@ const searchKeywordType = ref("text");
 const searchSuggestionsData = ref([]);
 // 命令建议数据
 const commandSuggestions = ref([]);
+// iframe 相关状态
+const showIframeViewer = ref(false);
+const iframeUrl = ref('');
 // 搜索建议元素
 const specialallResultsRef = ref(null);
 const allResultsRef = ref(null);
@@ -140,6 +168,37 @@ const handleTabCompletion = () => {
   return false;
 };
 
+// 获取 iframe URL
+const getIframeUrl = (input) => {
+  const match = input.match(/^\/iframe\s+(.+)/i);
+  if (match) {
+    let url = match[1].trim();
+    // 如果没有协议，默认添加 https://
+    if (!url.match(/^https?:\/\//i)) {
+      url = 'https://' + url;
+    }
+    return url;
+  }
+  return '';
+};
+
+// 打开 iframe 查看器
+const openIframeViewer = () => {
+  const url = getIframeUrl(searchKeyword.value);
+  if (url) {
+    iframeUrl.value = url;
+    showIframeViewer.value = true;
+    // 清空搜索框
+    searchKeyword.value = null;
+  }
+};
+
+// 关闭 iframe 查看器
+const closeIframeViewer = () => {
+  showIframeViewer.value = false;
+  iframeUrl.value = '';
+};
+
 // 搜索框联想 - 为命令提示移除延迟，为搜索建议保留少量延迟
 const keywordsSearch = (val) => {
   const searchValue = val?.trim();
@@ -157,12 +216,23 @@ const keywordsSearch = (val) => {
   // 识别输入类型
   searchKeywordType.value = identifyInput(searchValue);
   
-  // 若为命令 - 即时显示，无延迟
-  if (searchKeywordType.value === 'command' && set.showOtherSuggestions) {
+  // 若为命令或部分命令 - 即时显示，无延迟
+  if ((searchKeywordType.value === 'command' || searchKeywordType.value === 'command-partial') && set.showOtherSuggestions) {
     console.log(val + "的命令建议");
     // 获取命令建议
     commandSuggestions.value = getCommandSuggestions(searchValue);
     // 清空搜索建议
+    searchSuggestionsData.value = [];
+    // 计算高度
+    nextTick().then(() => {
+      changeSuggestionsHeights();
+    });
+  }
+  // 若为 iframe 命令或部分 iframe 命令 - 即时显示，无延迟
+  else if ((searchKeywordType.value === 'iframe' || searchKeywordType.value === 'iframe-partial') && set.showOtherSuggestions) {
+    console.log(val + "的iframe命令");
+    // 清空其他建议
+    commandSuggestions.value = [];
     searchSuggestionsData.value = [];
     // 计算高度
     nextTick().then(() => {
@@ -289,9 +359,9 @@ const keyboardEvents = (keyCode, event) => {
         }
         
         // 如果没有聚焦项，检查输入的命令是否完整匹配
-        const exactCommand = getExactCommand(mainInput.value);
-        if (exactCommand) {
-          executeCommand(exactCommand.command);
+        const commandResult = identifyCommand(mainInput.value);
+        if (commandResult.type === 'command' && commandResult.command && !commandResult.isPartial) {
+          executeCommand(mainInput.value);
           return;
         }
         
@@ -335,10 +405,10 @@ watch(
       const inputType = identifyInput(val);
       searchKeywordType.value = inputType;
       
-      // 命令类型立即执行，其他类型使用防抖
-      if (inputType === 'command' && set.showOtherSuggestions) {
+      // 命令类型、command-partial类型、iframe 类型和 iframe-partial 类型立即执行，其他类型使用防抖
+      if ((inputType === 'command' || inputType === 'command-partial' || inputType === 'iframe' || inputType === 'iframe-partial') && set.showOtherSuggestions) {
         keywordsSearch(val);
-      } else if (inputType !== 'command' && (set.showSearchSuggestions || set.showOtherSuggestions)) {
+      } else if (inputType !== 'command' && inputType !== 'command-partial' && inputType !== 'iframe' && inputType !== 'iframe-partial' && (set.showSearchSuggestions || set.showOtherSuggestions)) {
         debouncedSearchSuggestions(val);
       }
     }
@@ -403,6 +473,18 @@ defineExpose({ keyboardEvents, handleTabCompletion });
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+      
+      // iframe 命令特殊样式
+      &.iframe-result {
+        .command-name {
+          color: var(--main-color);
+        }
+        .command-desc {
+          color: var(--main-text-color);
+          opacity: 0.8;
+        }
+      }
+      
       @media (min-width: 520px) {
         &:hover,
         &.focus {

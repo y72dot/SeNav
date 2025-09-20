@@ -1,0 +1,147 @@
+/**
+ * 系统命令定义和注册
+ */
+
+import { registerCommand, COMMAND_TYPES, RESULT_TYPES } from '../commandRegistry.js';
+
+/**
+ * iframe 命令处理器
+ * @param {string} input 完整输入
+ * @returns {Object} 执行结果
+ */
+const handleIframeCommand = (input) => {
+  const match = input.match(/^\/iframe\s+(.+)/i);
+  if (match) {
+    let url = match[1].trim();
+    // 如果没有协议，默认添加 https://
+    if (!url.match(/^https?:\/\//i)) {
+      url = 'https://' + url;
+    }
+    
+    return {
+      success: true,
+      type: RESULT_TYPES.SUCCESS,
+      message: `正在打开网页: ${url}`,
+      data: { url, action: 'open_iframe' }
+    };
+  }
+  
+  return {
+    success: false,
+    type: RESULT_TYPES.ERROR,
+    message: 'iframe 命令格式错误，请使用: /iframe <网址>'
+  };
+};
+
+/**
+ * iframe 命令验证器
+ * @param {string} input 输入
+ * @returns {Object} 验证结果
+ */
+const validateIframeCommand = (input) => {
+  const match = input.match(/^\/iframe\s+(.+)/i);
+  if (!match) {
+    return {
+      valid: false,
+      message: 'iframe 命令需要提供网址参数'
+    };
+  }
+  
+  const url = match[1].trim();
+  if (!url) {
+    return {
+      valid: false,
+      message: '网址不能为空'
+    };
+  }
+  
+  return { valid: true };
+};
+
+/**
+ * test 命令处理器
+ * @param {string} input 完整输入
+ * @returns {Object} 执行结果
+ */
+const handleTestCommand = (input) => {
+  const args = input.replace('/test', '').trim();
+  return {
+    success: true,
+    type: RESULT_TYPES.SUCCESS,
+    message: `执行测试命令，参数: ${args || '无'}`,
+    data: { command: '/test', args }
+  };
+};
+
+/**
+ * test2 命令处理器
+ * @param {string} input 完整输入
+ * @returns {Object} 执行结果
+ */
+const handleTest2Command = (input) => {
+  const options = input.replace('/test2', '').trim();
+  return {
+    success: true,
+    type: RESULT_TYPES.SUCCESS,
+    message: `执行测试命令2，选项: ${options || '无'}`,
+    data: { command: '/test2', options }
+  };
+};
+
+/**
+ * 注册所有系统命令
+ */
+export const registerSystemCommands = () => {
+  // 注册 iframe 命令
+  registerCommand({
+    name: '/iframe',
+    pattern: '^/iframe\\s+.+',
+    partialPattern: '^/ifr(a(m(e)?)?)?$',
+    type: COMMAND_TYPES.WITH_ARGS,
+    description: '在内嵌框架中打开网页',
+    usage: '/iframe <网址>',
+    category: '网页工具',
+    examples: [
+      '/iframe https://www.baidu.com',
+      '/iframe www.google.com',
+      '/iframe github.com'
+    ],
+    handler: handleIframeCommand,
+    validator: validateIframeCommand
+  });
+
+  // 注册 test 命令
+  registerCommand({
+    name: '/test',
+    pattern: '^/test(\\s+.*)?$',
+    partialPattern: '^/te(s(t)?)?$',
+    type: COMMAND_TYPES.WITH_ARGS,
+    description: '测试命令1',
+    usage: '/test [参数]',
+    category: '测试',
+    examples: [
+      '/test hello',
+      '/test world'
+    ],
+    handler: handleTestCommand
+  });
+
+  // 注册 test2 命令
+  registerCommand({
+    name: '/test2',
+    pattern: '^/test2(\\s+.*)?$',
+    partialPattern: '^/test2?$',
+    type: COMMAND_TYPES.WITH_ARGS,
+    description: '测试命令2',
+    usage: '/test2 [选项]',
+    category: '测试',
+    examples: [
+      '/test2 -v',
+      '/test2 --help'
+    ],
+    handler: handleTest2Command
+  });
+};
+
+// 自动注册所有命令
+registerSystemCommands();
