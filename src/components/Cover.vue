@@ -35,7 +35,7 @@ const setBgUrl = () => {
   const { backgroundType } = set;
   switch (backgroundType) {
     case 0:
-      bgUrl.value = `/background/bg${bgRandom}.jpg`;
+      bgUrl.value = `${import.meta.env.BASE_URL}background/bg${bgRandom}.jpg`;
       break;
     case 1: {
       const isMobile = window.innerWidth < 768;
