@@ -197,13 +197,19 @@ const getIframeUrl = (input) => {
 };
 
 // 打开 iframe 查看器
-const openIframeViewer = () => {
-  const url = getIframeUrl(searchKeyword.value);
-  if (url) {
-    iframeUrl.value = url;
+const openIframeViewer = (url = null) => {
+  // 如果传入了URL参数，直接使用；否则从搜索框获取
+  const targetUrl = url || getIframeUrl(searchKeyword.value);
+  console.log("🖼️ openIframeViewer 被调用，URL：", targetUrl);
+  
+  if (targetUrl) {
+    iframeUrl.value = targetUrl;
     showIframeViewer.value = true;
+    console.log("✅ iframe 窗口已设置为显示，URL：", targetUrl);
     // 清空搜索框
     searchKeyword.value = null;
+  } else {
+    console.log("❌ 无效的URL，无法打开iframe窗口");
   }
 };
 
@@ -430,7 +436,7 @@ watch(
 );
 
 // 暴露方法
-defineExpose({ keyboardEvents, handleTabCompletion });
+defineExpose({ keyboardEvents, handleTabCompletion, openIframeViewer });
 </script>
 
 <style lang="scss" scoped>

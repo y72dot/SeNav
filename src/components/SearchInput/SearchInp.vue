@@ -101,10 +101,12 @@ const closeSearchInput = (check = false) => {
 
 // 统一的搜索处理函数
 const handleSearchAction = async (val, type = 1) => {
+  console.log("🔍 搜索按钮被点击，输入值：", val, "类型：", type);
   const searchValue = val?.trim();
   
   // 如果为空，提示用户输入
   if (!searchValue) {
+    console.log("❌ 搜索值为空");
     if (status.siteStatus === "focus") {
       $message.info("请输入搜索内容", { duration: 1500 });
     }
@@ -113,15 +115,20 @@ const handleSearchAction = async (val, type = 1) => {
     return;
   }
 
+  console.log("✅ 搜索值有效，开始处理：", searchValue);
+
   // 导入命令识别函数
   const { identifyCommand } = await import("@/utils/commandRegistry");
   
   // 如果是以 / 开头的输入，进行命令识别
   if (searchValue.startsWith('/')) {
+    console.log("🔧 检测到命令输入");
     const commandResult = identifyCommand(searchValue);
+    console.log("🔧 命令识别结果：", commandResult);
     
     // 如果是完整的命令，执行命令而不是搜索
     if (commandResult.type === 'command' && commandResult.command && !commandResult.isPartial) {
+      console.log("🚀 执行完整命令");
       const { executeCommand } = await import("@/utils/commandRegistry");
       const result = executeCommand(searchValue);
       handleCommandExecuted(result);
@@ -130,11 +137,13 @@ const handleSearchAction = async (val, type = 1) => {
     
     // 如果是命令但不完整，不执行搜索，直接返回
     if (commandResult.type === 'command' || commandResult.type === 'command-partial') {
+      console.log("⏸️ 命令不完整，不执行搜索");
       return;
     }
   }
   
   // 非命令类型，执行正常搜索
+  console.log("🌐 执行正常搜索");
   toSearch(searchValue, type);
 };
 
@@ -234,6 +243,19 @@ const handleInput = (event) => {
 // 处理命令执行结果
 const handleCommandExecuted = (result) => {
   console.log("命令执行结果：", result);
+  
+  // 特殊处理 iframe 命令
+  if (result.success && result.data && result.data.action === 'open_iframe') {
+    console.log("🖼️ 触发 iframe 窗口显示，URL：", result.data.url);
+    // 通过子组件方法打开 iframe 窗口
+    if (suggestionsRef.value && suggestionsRef.value.openIframeViewer) {
+      // 直接传递URL给openIframeViewer方法
+      suggestionsRef.value.openIframeViewer(result.data.url);
+    } else {
+      console.log("⚠️ 无法通过子组件打开窗口，suggestionsRef不可用");
+    }
+  }
+  
   if (result.success) {
     $message.success(result.message || "命令执行成功");
   } else {
