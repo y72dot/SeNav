@@ -6,7 +6,7 @@ import viteCompression from "vite-plugin-compression";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/SeNav/',
+  base: './',
   plugins: [
     vue(),
     // PWA
@@ -38,12 +38,12 @@ export default defineConfig({
         short_name: "SeNav",
         description: "一个极致简约的导航页",
         display: "standalone",
-        start_url: "/SeNav/",
+        start_url: "./",
         theme_color: "#fff",
         background_color: "#efefef",
         icons: [
           {
-            src: "/SeNav/icon/logo-144.png",
+            src: "./icon/logo-144.png",
             sizes: "144x144",
             type: "image/png",
           },
@@ -63,6 +63,13 @@ export default defineConfig({
       // eslint-disable-next-line no-undef
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern',
+      }
+    }
   },
   build: {
     minify: "terser",

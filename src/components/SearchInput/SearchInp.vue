@@ -45,7 +45,7 @@
         @keydown.stop="pressKeyboard"
         @input="handleInput"
       />
-      <div class="go" title="搜索" @click="toSearch(status.searchInputValue)">
+      <div class="go" title="搜索" @click="handleSearchAction(status.searchInputValue)">
         <SvgIcon iconName="icon-search" className="search" />
       </div>
     </div>
@@ -55,7 +55,7 @@
     <Suggestions 
       ref="suggestionsRef" 
       :keyWord="status.searchInputValue" 
-      @toSearch="toSearch" 
+      @toSearch="handleSearchAction" 
       @commandExecuted="handleCommandExecuted"
       @tabCompletion="handleTabCompletion"
     />
@@ -97,6 +97,45 @@ const closeSearchInput = (check = false) => {
     });
   }
   status.setEngineChangeStatus(false);
+};
+
+// 统一的搜索处理函数
+const handleSearchAction = async (val, type = 1) => {
+  const searchValue = val?.trim();
+  
+  // 如果为空，提示用户输入
+  if (!searchValue) {
+    if (status.siteStatus === "focus") {
+      $message.info("请输入搜索内容", { duration: 1500 });
+    }
+    status.setSiteStatus("focus");
+    searchInputRef.value?.focus();
+    return;
+  }
+
+  // 导入命令识别函数
+  const { identifyCommand } = await import("@/utils/commandRegistry");
+  
+  // 如果是以 / 开头的输入，进行命令识别
+  if (searchValue.startsWith('/')) {
+    const commandResult = identifyCommand(searchValue);
+    
+    // 如果是完整的命令，执行命令而不是搜索
+    if (commandResult.type === 'command' && commandResult.command && !commandResult.isPartial) {
+      const { executeCommand } = await import("@/utils/commandRegistry");
+      const result = executeCommand(searchValue);
+      handleCommandExecuted(result);
+      return;
+    }
+    
+    // 如果是命令但不完整，不执行搜索，直接返回
+    if (commandResult.type === 'command' || commandResult.type === 'command-partial') {
+      return;
+    }
+  }
+  
+  // 非命令类型，执行正常搜索
+  toSearch(searchValue, type);
 };
 
 // 前往搜索

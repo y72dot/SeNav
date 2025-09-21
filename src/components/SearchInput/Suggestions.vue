@@ -43,7 +43,7 @@
               v-for="cmd in commandSuggestions"
               :key="cmd.name"
               :data-command="cmd.name"
-              @click.stop="executeCommand(cmd.name)"
+              @click.stop="completeCommand(cmd.name)"
             >
               <SvgIcon iconName="icon-code" />
               <div class="command-info">
@@ -154,6 +154,20 @@ const executeCommand = (command) => {
   // 清空搜索框
   searchKeyword.value = null;
   commandSuggestions.value = [];
+};
+
+// 补全命令到输入框（只对命令类型）
+const completeCommand = (command) => {
+  // 检查是否为命令类型
+  if (command && command.startsWith('/')) {
+    emit("tabCompletion", command);
+    // 清空建议
+    searchKeyword.value = null;
+    commandSuggestions.value = [];
+  } else {
+    // 非命令类型，执行搜索
+    emit("toSearch", command, 1);
+  }
 };
 
 // 处理TAB补全
