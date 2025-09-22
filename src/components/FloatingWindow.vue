@@ -8,7 +8,7 @@
       ref="windowContainer"
       class="floating-window-container"
       :style="containerStyle"
-      :class="{ 'no-drag': isDragging || isResizing }"
+      :class="{ 'no-drag': isDragging || isResizing || isZooming }"
       @mouseenter="showControls = true"
       @mouseleave="showControls = false"
     >
@@ -25,6 +25,27 @@
           <span></span>
         </div>
       </div>
+
+      <!-- 置顶切换按钮（左上角） -->
+      <button 
+        class="pin-btn"
+        :class="{ 'visible': showControls, 'pinned': isPinned }"
+        @click="togglePin"
+        :title="isPinned ? '取消置顶' : '设置置顶'"
+      >
+        <svg v-if="isPinned" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 9l3-3 3 3"/>
+          <path d="M12 6v12"/>
+          <path d="M21 12h-3"/>
+          <path d="M6 12H3"/>
+        </svg>
+        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2l3 3-3 3"/>
+          <path d="M12 2v12"/>
+          <path d="M21 12h-3"/>
+          <path d="M6 12H3"/>
+        </svg>
+      </button>
 
       <!-- 关闭按钮（右上角） -->
       <button 
@@ -52,8 +73,25 @@
         </svg>
       </div>
 
+      <!-- 缩放控制按钮（左下角） -->
+      <button 
+        class="zoom-btn"
+        :class="{ 'visible': showControls }"
+        @mousedown="startZoomDrag"
+        @dblclick="resetZoom"
+        :title="`页面缩放: ${Math.round(zoomLevel * 100)}% - 拖拽调整，双击重置`"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+          <line x1="8" y1="11" x2="14" y2="11"/>
+          <line x1="11" y1="8" x2="11" y2="14"/>
+        </svg>
+        <span class="zoom-indicator">{{ Math.round(zoomLevel * 100) }}%</span>
+      </button>
+
       <!-- 窗口内容区域 -->
-      <div class="window-content" :class="contentClass">
+      <div class="window-content" :class="contentClass" :style="contentStyle">
         <slot></slot>
       </div>
     </div>
@@ -87,12 +125,12 @@ const props = defineProps({
   // 最小宽度
   minWidth: {
     type: Number,
-    default: 400
+    default: 300
   },
   // 最小高度
   minHeight: {
     type: Number,
-    default: 300
+    default: 200
   },
   // 是否显示关闭按钮
   showCloseButton: {
@@ -126,19 +164,24 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'drag-start', 'drag-end', 'resize-start', 'resize-end'])
+const emit = defineEmits(['close', 'drag-start', 'drag-end', 'resize-start', 'resize-end', 'pin-change', 'zoom-change'])
 
 // 组件状态
 const windowContainer = ref(null)
 const isDragging = ref(false)
 const isResizing = ref(false)
+const isZooming = ref(false)
 const showControls = ref(false)
+const isPinned = ref(true) // 默认置顶
 
 // 位置和尺寸状态
 const position = ref({ x: 100, y: 100 })
 const size = ref({ width: props.width, height: props.height })
 const dragStart = ref({ x: 0, y: 0 })
 const resizeStart = ref({ x: 0, y: 0, width: 0, height: 0 })
+const zoomStart = ref({ x: 0, y: 0 })
+const zoomLevel = ref(1) // 缩放级别，1为100%
+const initialZoomLevel = ref(1) // 拖拽开始时的缩放级别
 
 // 计算样式
 const containerStyle = computed(() => {
@@ -148,7 +191,17 @@ const containerStyle = computed(() => {
     top: `${position.value.y}px`,
     width: `${size.value.width}px`,
     height: `${size.value.height}px`,
-    zIndex: 1001
+    zIndex: isPinned.value ? 1001 : 999
+  }
+})
+
+// iframe内容缩放样式
+const contentStyle = computed(() => {
+  return {
+    transform: `scale(${zoomLevel.value})`,
+    transformOrigin: 'top left',
+    width: `${100 / zoomLevel.value}%`,
+    height: `${100 / zoomLevel.value}%`
   }
 })
 
@@ -234,6 +287,56 @@ const stopResize = () => {
   emit('resize-end')
 }
 
+// 置顶切换功能
+const togglePin = () => {
+  isPinned.value = !isPinned.value
+  emit('pin-change', isPinned.value)
+}
+
+// 缩放拖拽功能
+const startZoomDrag = (e) => {
+  // 防止双击事件触发
+  if (e.detail === 2) return
+  
+  isZooming.value = true
+  initialZoomLevel.value = zoomLevel.value // 保存当前缩放级别
+  zoomStart.value = {
+    x: e.clientX,
+    y: e.clientY
+  }
+  
+  document.addEventListener('mousemove', handleZoomDrag)
+  document.addEventListener('mouseup', stopZoomDrag)
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+const handleZoomDrag = (e) => {
+  if (!isZooming.value) return
+  
+  const deltaX = e.clientX - zoomStart.value.x
+  const deltaY = e.clientY - zoomStart.value.y
+  
+  // 计算缩放变化：向右上拖拽增大缩放，向左下拖拽减小缩放
+  const zoomDelta = (deltaX - deltaY) * 0.002
+  const newZoom = Math.max(0.25, Math.min(3, initialZoomLevel.value + zoomDelta))
+  
+  zoomLevel.value = newZoom
+  emit('zoom-change', newZoom)
+}
+
+const stopZoomDrag = () => {
+  isZooming.value = false
+  document.removeEventListener('mousemove', handleZoomDrag)
+  document.removeEventListener('mouseup', stopZoomDrag)
+}
+
+// 重置缩放
+const resetZoom = () => {
+  zoomLevel.value = 1
+  emit('zoom-change', 1)
+}
+
 // 关闭窗口
 const handleClose = () => {
   emit('close')
@@ -301,6 +404,8 @@ onUnmounted(() => {
   document.removeEventListener('mouseup', stopDrag)
   document.removeEventListener('mousemove', handleResize)
   document.removeEventListener('mouseup', stopResize)
+  document.removeEventListener('mousemove', handleZoomDrag)
+  document.removeEventListener('mouseup', stopZoomDrag)
 })
 </script>
 
@@ -404,6 +509,79 @@ onUnmounted(() => {
       @media (prefers-color-scheme: dark) {
         background: rgba(255, 255, 255, 0.5);
       }
+    }
+  }
+}
+
+// 置顶切换按钮（左上角）
+.pin-btn {
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(52, 199, 89, 0.9);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 10;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+  
+  &.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  &.pinned {
+    background: rgba(255, 149, 0, 0.9);
+    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
+    
+    &:hover {
+      background: rgba(255, 149, 0, 1);
+      box-shadow: 0 6px 20px rgba(255, 149, 0, 0.4);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      background: rgba(255, 159, 10, 0.9);
+      box-shadow: 0 4px 12px rgba(255, 159, 10, 0.3);
+      
+      &:hover {
+        background: rgba(255, 159, 10, 1);
+        box-shadow: 0 6px 20px rgba(255, 159, 10, 0.4);
+      }
+    }
+  }
+  
+  &:hover {
+    background: rgba(52, 199, 89, 1);
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(52, 199, 89, 0.4);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    background: rgba(48, 209, 88, 0.9);
+    box-shadow: 0 4px 12px rgba(48, 209, 88, 0.3);
+    
+    &:hover {
+      background: rgba(48, 209, 88, 1);
+      box-shadow: 0 6px 20px rgba(48, 209, 88, 0.4);
     }
   }
 }
@@ -513,12 +691,106 @@ onUnmounted(() => {
   }
 }
 
+// 缩放控制按钮（左下角）
+.zoom-btn {
+  position: absolute;
+  bottom: -16px;
+  left: -16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(88, 86, 214, 0.9);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  z-index: 10;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 12px rgba(88, 86, 214, 0.3);
+  
+  &.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  &:hover {
+    background: rgba(88, 86, 214, 1);
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(88, 86, 214, 0.4);
+    
+    .zoom-indicator {
+      opacity: 1;
+      transform: translateY(-40px) scale(1);
+    }
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2;
+  }
+  
+  .zoom-indicator {
+    position: absolute;
+    top: -35px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px) scale(0.8);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: rgba(0, 0, 0, 0.8);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      background: rgba(255, 255, 255, 0.9);
+      color: black;
+      
+      &::after {
+        border-top-color: rgba(255, 255, 255, 0.9);
+      }
+    }
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    background: rgba(94, 92, 230, 0.9);
+    box-shadow: 0 4px 12px rgba(94, 92, 230, 0.3);
+    
+    &:hover {
+      background: rgba(94, 92, 230, 1);
+      box-shadow: 0 6px 20px rgba(94, 92, 230, 0.4);
+    }
+  }
+}
+
 // 窗口内容区域
 .window-content {
   width: 100%;
   height: 100%;
   position: relative;
-  border-radius: 16px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -539,7 +811,9 @@ onUnmounted(() => {
   }
   
   .close-btn,
-  .resize-handle {
+  .resize-handle,
+  .pin-btn,
+  .zoom-btn {
     width: 36px;
     height: 36px;
     
@@ -580,9 +854,33 @@ onUnmounted(() => {
     }
   }
   
+  .pin-btn {
+    top: -18px;
+    left: -18px;
+    width: 40px;
+    height: 40px;
+    
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+  
   .resize-handle {
     bottom: -18px;
     right: -18px;
+    width: 40px;
+    height: 40px;
+    
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+  
+  .zoom-btn {
+    bottom: -18px;
+    left: -18px;
     width: 40px;
     height: 40px;
     

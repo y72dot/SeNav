@@ -48,7 +48,6 @@ const handleClose = () => {
     height: 100%;
     border: none;
     display: block;
-    border-radius: 16px;
   }
 }
 </style>
