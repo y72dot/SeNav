@@ -204,14 +204,22 @@ const zoomStart = ref({ x: 0, y: 0 })
 const zoomLevel = ref(1) // 缩放级别，1为100%
 const initialZoomLevel = ref(1) // 拖拽开始时的缩放级别
 
+// 计算当前实际显示的窗口尺寸
+const currentDisplaySize = computed(() => {
+  return {
+    width: isMinimized.value ? 120 : size.value.width,
+    height: isMinimized.value ? 40 : size.value.height
+  }
+})
+
 // 计算样式
 const containerStyle = computed(() => {
   return {
     position: 'fixed',
     left: `${position.value.x}px`,
     top: `${position.value.y}px`,
-    width: isMinimized.value ? '120px' : `${size.value.width}px`,
-    height: isMinimized.value ? '40px' : `${size.value.height}px`,
+    width: `${currentDisplaySize.value.width}px`,
+    height: `${currentDisplaySize.value.height}px`,
     zIndex: 999,
     borderRadius: isMinimized.value ? '20px' : '12px',
     overflow: 'hidden'
@@ -251,10 +259,10 @@ const handleDrag = (e) => {
   const newX = e.clientX - dragStart.value.x
   const newY = e.clientY - dragStart.value.y
   
-  // 限制窗口不超出屏幕边界
+  // 限制窗口不超出屏幕边界，使用当前实际显示的尺寸
   position.value = {
-    x: Math.max(0, Math.min(window.innerWidth - size.value.width, newX)),
-    y: Math.max(0, Math.min(window.innerHeight - size.value.height, newY))
+    x: Math.max(0, Math.min(window.innerWidth - currentDisplaySize.value.width, newX)),
+    y: Math.max(0, Math.min(window.innerHeight - currentDisplaySize.value.height, newY))
   }
 }
 
@@ -332,6 +340,18 @@ const expandWindow = () => {
     // 恢复原始尺寸
     size.value = { ...originalSize.value }
     isMinimized.value = false
+    
+    // 检查恢复后的窗口是否超出屏幕边界，如果超出则调整位置
+    const maxX = window.innerWidth - size.value.width
+    const maxY = window.innerHeight - size.value.height
+    
+    if (position.value.x > maxX || position.value.y > maxY) {
+      position.value = {
+        x: Math.max(0, Math.min(position.value.x, maxX)),
+        y: Math.max(0, Math.min(position.value.y, maxY))
+      }
+    }
+    
     emit('minimize', false)
   }
 }
@@ -407,8 +427,8 @@ const centerWindow = () => {
     position.value = { x, y }
   } else {
     position.value = {
-      x: Math.max(0, (window.innerWidth - size.value.width) / 2),
-      y: Math.max(0, (window.innerHeight - size.value.height) / 2)
+      x: Math.max(0, (window.innerWidth - currentDisplaySize.value.width) / 2),
+      y: Math.max(0, (window.innerHeight - currentDisplaySize.value.height) / 2)
     }
   }
 }
@@ -468,11 +488,9 @@ onUnmounted(() => {
 }
 
 .floating-window-container {
-  background: #ffffff;
+  background-color: var(--main-background-light-color);
   border-radius: 16px;
-  box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: var(--main-box-shadow);
   overflow: hidden;
   position: relative;
   backdrop-filter: blur(20px);
@@ -485,14 +503,6 @@ onUnmounted(() => {
     .window-content {
       pointer-events: none;
     }
-  }
-  
-  // 暗色主题适配
-  @media (prefers-color-scheme: dark) {
-    background: rgba(30, 30, 30, 0.95);
-    box-shadow: 
-      0 25px 50px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -520,11 +530,7 @@ onUnmounted(() => {
     height: 8px;
     
     .drag-indicator span {
-      background: rgba(0, 0, 0, 0.6);
-      
-      @media (prefers-color-scheme: dark) {
-        background: rgba(255, 255, 255, 0.8);
-      }
+      background: rgba(128, 128, 128, 0.8);
     }
   }
   
@@ -536,22 +542,14 @@ onUnmounted(() => {
     width: 100%;
     height: 100%;
     border-radius: 0 0 8px 8px;
-    background: rgba(0, 0, 0, 0.05);
-    
-    @media (prefers-color-scheme: dark) {
-      background: rgba(255, 255, 255, 0.1);
-    }
+    background: rgba(128, 128, 128, 0.1);
     
     span {
       width: 12px;
       height: 2px;
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(128, 128, 128, 0.6);
       border-radius: 1px;
       transition: all 0.2s ease;
-      
-      @media (prefers-color-scheme: dark) {
-        background: rgba(255, 255, 255, 0.5);
-      }
     }
   }
 }
@@ -812,7 +810,7 @@ onUnmounted(() => {
 .capsule-drag-area {
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.95);
+  background-color: var(--main-background-light-color);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 20px;
   cursor: move;
@@ -821,25 +819,16 @@ onUnmounted(() => {
   justify-content: center;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--main-box-shadow);
   
   &:hover {
-    background: rgba(255, 255, 255, 1);
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+    background-color: var(--main-background-hover-color);
+    box-shadow: var(--main-box-shadow);
     transform: scale(1.02);
   }
   
   &:active {
     transform: scale(0.98);
-  }
-  
-  @media (prefers-color-scheme: dark) {
-    background: rgba(40, 40, 40, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    
-    &:hover {
-      background: rgba(50, 50, 50, 1);
-    }
   }
 }
 
@@ -847,13 +836,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #333;
+  color: var(--main-text-color);
   font-size: 12px;
   font-weight: 500;
-  
-  @media (prefers-color-scheme: dark) {
-    color: #fff;
-  }
 }
 
 .capsule-icon {
