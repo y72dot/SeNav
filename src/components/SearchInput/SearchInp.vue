@@ -59,6 +59,13 @@
       @commandExecuted="handleCommandExecuted"
       @tabCompletion="handleTabCompletion"
     />
+    <!-- 帮助窗口 -->
+    <HelpWindow
+      :visible="helpWindowVisible"
+      :commands-by-category="helpCommandsByCategory"
+      @close="closeHelpWindow"
+      @commandClick="handleHelpCommandClick"
+    />
   </div>
 </template>
 
@@ -67,6 +74,7 @@ import { ref, nextTick } from "vue";
 import { statusStore, setStore } from "@/stores";
 import SearchEngine from "@/components/SearchInput/SearchEngine.vue";
 import Suggestions from "@/components/SearchInput/Suggestions.vue";
+import HelpWindow from "@/components/HelpWindow.vue";
 import defaultEngine from "@/assets/defaultEngine.json";
 
 const set = setStore();
@@ -81,6 +89,10 @@ const searchInputRef = ref(null);
 
 // 搜索建议子组件
 const suggestionsRef = ref(null);
+
+// 帮助窗口状态
+  const helpWindowVisible = ref(false)
+  const helpCommandsByCategory = ref({});
 
 // 关闭搜索框
 const closeSearchInput = (check = false) => {
@@ -256,7 +268,13 @@ const handleCommandExecuted = (result) => {
     }
   }
   
-  if (result.success) {
+  // 特殊处理 help 命令
+  if (result.success && result.data && result.data.action === 'show_help_window') {
+    console.log("📋 显示帮助信息");
+    // 设置帮助窗口数据并显示
+    helpCommandsByCategory.value = result.data.commandsByCategory || {};
+    helpWindowVisible.value = true;
+  } else if (result.success) {
     $message.success(result.message || "命令执行成功");
   } else {
     $message.error(result.message || "命令执行失败");
@@ -275,6 +293,25 @@ const handleTabCompletion = (completion) => {
     searchInputRef.value?.focus();
   });
 };
+
+  // 关闭帮助窗口
+  const closeHelpWindow = () => {
+    helpWindowVisible.value = false
+    helpCommandsByCategory.value = {}
+  }
+
+  // 处理帮助窗口中的命令点击
+  const handleHelpCommandClick = (commandName) => {
+    console.log("帮助窗口命令点击：", commandName)
+    // 设置搜索框内容为点击的命令
+    status.setSearchInputValue(commandName)
+    // 聚焦搜索框
+    nextTick(() => {
+      searchInputRef.value?.focus()
+      // 设置搜索框状态为聚焦
+      status.setSiteStatus("focus")
+    })
+  }
 </script>
 
 <style lang="scss" scoped>

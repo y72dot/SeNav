@@ -2,7 +2,7 @@
  * 系统命令定义和注册
  */
 
-import { registerCommand, COMMAND_TYPES, RESULT_TYPES } from '../commandRegistry.js';
+import { registerCommand, COMMAND_TYPES, RESULT_TYPES, getAllCommands } from '../commandRegistry.js';
 
 /**
  * iframe 命令处理器
@@ -59,6 +59,35 @@ const validateIframeCommand = (input) => {
 };
 
 /**
+ * help 命令处理器
+ * @param {string} input 完整输入
+ * @returns {Object} 执行结果
+ */
+const handleHelpCommand = (input) => {
+  const allCommands = getAllCommands();
+  
+  // 按分类组织命令
+  const commandsByCategory = {};
+  allCommands.forEach(cmd => {
+    const category = cmd.category || '其他';
+    if (!commandsByCategory[category]) {
+      commandsByCategory[category] = [];
+    }
+    commandsByCategory[category].push(cmd);
+  });
+  
+  return {
+    success: true,
+    type: RESULT_TYPES.SUCCESS,
+    message: '正在打开帮助窗口...',
+    data: { 
+      action: 'show_help_window',
+      commandsByCategory
+    }
+  };
+};
+
+/**
  * test 命令处理器
  * @param {string} input 完整输入
  * @returns {Object} 执行结果
@@ -92,6 +121,19 @@ const handleTest2Command = (input) => {
  * 注册所有系统命令
  */
 export const registerSystemCommands = () => {
+  // 注册 help 命令
+  registerCommand({
+    name: '/help',
+    pattern: '^/help(\\s+.*)?$',
+    partialPattern: '^/h(e(l(p)?)?)?$',
+    type: COMMAND_TYPES.SIMPLE,
+    description: '显示所有可用命令的帮助信息',
+    usage: '/help',
+    category: '系统',
+    examples: ['/help'],
+    handler: handleHelpCommand
+  });
+
   // 注册 iframe 命令
   registerCommand({
     name: '/iframe',
