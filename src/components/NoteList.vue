@@ -12,7 +12,9 @@
             v-model="editingContent"
             class="note-edit-textarea"
             @blur="saveNote(note.id)"
-            @keydown.enter.prevent="saveNote(note.id)"
+            @keydown.enter.stop.prevent="saveNote(note.id)"
+            @keydown.space.stop
+            @keydown="handleKeydown"
             @input="handleInput"
           ></textarea>
           <div v-show="editingNoteId !== note.id">
@@ -114,6 +116,14 @@ const adjustTextareaHeight = (textarea) => {
 // 监听输入内容变化
 const handleInput = (event) => {
   adjustTextareaHeight(event.target)
+}
+
+// 处理键盘事件，阻止特定按键冒泡到全局监听器
+const handleKeydown = (event) => {
+  // 阻止斜杠键冒泡到全局监听器
+  if (event.key === '/') {
+    event.stopPropagation()
+  }
 }
 </script>
 

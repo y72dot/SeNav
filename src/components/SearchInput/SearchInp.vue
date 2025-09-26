@@ -71,6 +71,12 @@
       :visible="shortcutWindowVisible"
       @close="closeShortcutWindow"
     />
+    
+    <!-- 便签窗口 -->
+    <NoteWindow
+      :visible="noteWindowVisible"
+      @close="closeNoteWindow"
+    />
   </div>
 </template>
 
@@ -81,6 +87,7 @@ import SearchEngine from "@/components/SearchInput/SearchEngine.vue";
 import Suggestions from "@/components/SearchInput/Suggestions.vue";
 import HelpWindow from "@/components/HelpWindow.vue";
 import ShortcutWindow from "@/components/ShortcutWindow.vue";
+import NoteWindow from "@/components/NoteWindow.vue";
 import defaultEngine from "@/assets/defaultEngine.json";
 
 const set = setStore();
@@ -102,6 +109,9 @@ const helpCommandsByCategory = ref({});
 
 // 捷径窗口状态
 const shortcutWindowVisible = ref(false);
+
+// 便签窗口状态
+const noteWindowVisible = ref(false);
 
 // 关闭搜索框
 const closeSearchInput = (check = false) => {
@@ -289,6 +299,11 @@ const handleCommandExecuted = (result) => {
     console.log("🔗 显示捷径管理窗口");
     shortcutWindowVisible.value = true;
   } 
+  // 特殊处理 note 命令
+  else if (result.success && result.data && result.data.action === 'show_note_window') {
+    console.log("📝 显示便签管理窗口");
+    noteWindowVisible.value = true;
+  } 
   else if (result.success) {
     $message.success(result.message || "命令执行成功");
   } else {
@@ -318,6 +333,11 @@ const handleTabCompletion = (completion) => {
   // 关闭捷径窗口
   const closeShortcutWindow = () => {
     shortcutWindowVisible.value = false
+  }
+
+  // 关闭便签窗口
+  const closeNoteWindow = () => {
+    noteWindowVisible.value = false
   }
 
   // 处理帮助窗口中的命令点击
