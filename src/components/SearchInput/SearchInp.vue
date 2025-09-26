@@ -318,9 +318,14 @@ const handleTabCompletion = (completion) => {
   console.log("TAB补全：", completion);
   // 更新搜索框内容
   status.setSearchInputValue(completion);
-  // 保持焦点
+  // 保持焦点，不关闭搜索框
   nextTick(() => {
     searchInputRef.value?.focus();
+    // 确保光标在末尾
+    const input = searchInputRef.value;
+    if (input) {
+      input.setSelectionRange(completion.length, completion.length);
+    }
   });
 };
 

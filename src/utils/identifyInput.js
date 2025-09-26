@@ -14,10 +14,16 @@ const identifyInput = (input) => {
   }
 
   /**
-   * 网址正则
+   * 网址正则 - 匹配 http/https 协议的完整URL
    * @type {RegExp}
    */
   const urlRegex = new RegExp("https?://[\\w.-]+", "i");
+
+  /**
+   * 域名正则 - 匹配常见的域名格式（包含点号的域名）
+   * @type {RegExp}
+   */
+  const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
 
   /**
    * IP 正则
@@ -59,8 +65,8 @@ const identifyInput = (input) => {
     return 'command-partial';
   }
 
-  // 判断是否为网址
-  if (urlRegex.test(input) || ipv4Regex.test(input)) return "url";
+  // 判断是否为网址或域名
+  if (urlRegex.test(input) || ipv4Regex.test(input) || domainRegex.test(input)) return "url";
 
   // 判断是否为邮件地址
   if (emailRegex.test(input)) return "email";

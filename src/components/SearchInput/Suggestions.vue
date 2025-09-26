@@ -40,7 +40,8 @@
             <div
               v-if="searchKeywordType === 'command' || searchKeywordType === 'command-partial'"
               class="s-result command-result"
-              v-for="cmd in commandSuggestions"
+              :class="{ 'tab-selected': isTabCompleting && tabCompletionIndex === index }"
+              v-for="(cmd, index) in commandSuggestions"
               :key="cmd.name"
               :data-command="cmd.name"
               @click.stop="completeCommand(cmd.name)"
@@ -62,7 +63,7 @@
             </div>
             <!-- 直接访问 -->
             <div
-              v-if="searchKeywordType !== 'text' && searchKeywordType !== 'command'"
+              v-if="searchKeywordType !== 'text' && searchKeywordType !== 'command' && searchKeywordType !== 'command-partial' && searchKeywordType !== 'iframe' && searchKeywordType !== 'iframe-partial'"
               class="s-result"
               @click.stop="toSearch(searchKeyword, searchKeywordType === 'email' ? 3 : 4)"
             >
@@ -132,6 +133,9 @@ const searchKeywordType = ref("text");
 const searchSuggestionsData = ref([]);
 // 命令建议数据
 const commandSuggestions = ref([]);
+// Tab补全相关状态
+const tabCompletionIndex = ref(-1); // 当前选中的命令索引，-1表示未选中
+const isTabCompleting = ref(false); // 是否正在进行Tab补全
 // iframe 相关状态 - 支持多窗口
 const iframeWindows = ref([]);
 let windowIdCounter = 0;
@@ -163,25 +167,42 @@ const completeCommand = (command) => {
   // 检查是否为命令类型
   if (command && command.startsWith('/')) {
     emit("tabCompletion", command);
-    // 清空建议
-    searchKeyword.value = null;
-    commandSuggestions.value = [];
+    // 不再清空建议，保持显示状态以支持Tab循环
+    // searchKeyword.value = null;
+    // commandSuggestions.value = [];
   } else {
     // 非命令类型，执行搜索
     emit("toSearch", command, 1);
   }
 };
 
-// 处理TAB补全
+// 处理TAB补全 - 重构为循环选择
 const handleTabCompletion = () => {
-  if (searchKeywordType.value === 'command') {
-    const completion = getTabCompletion(searchKeyword.value);
-    if (completion) {
-      emit("tabCompletion", completion);
+  if (searchKeywordType.value === 'command' && commandSuggestions.value.length > 0) {
+    // 如果是第一次按Tab或者不在Tab补全状态，初始化
+    if (!isTabCompleting.value) {
+      isTabCompleting.value = true;
+      tabCompletionIndex.value = 0;
+    } else {
+      // 循环到下一个命令
+      tabCompletionIndex.value = (tabCompletionIndex.value + 1) % commandSuggestions.value.length;
+    }
+    
+    // 获取当前选中的命令
+    const selectedCommand = commandSuggestions.value[tabCompletionIndex.value];
+    if (selectedCommand) {
+      // 填入输入框，但不清空建议列表
+      emit("tabCompletion", selectedCommand.name);
       return true;
     }
   }
   return false;
+};
+
+// 重置Tab补全状态
+const resetTabCompletion = () => {
+  isTabCompleting.value = false;
+  tabCompletionIndex.value = -1;
 };
 
 // 获取 iframe URL
@@ -334,66 +355,105 @@ const keyboardEvents = (keyCode, event) => {
       }
     }
     
+    // 其他按键重置Tab补全状态（除了Tab键）
+    if (keyCode !== 9) {
+      resetTabCompletion();
+    }
+    
     // 38 上 / 40 下
     if (keyCode === 38 || keyCode === 40) {
       // 阻止默认事件
       event.preventDefault();
       
-      // 处理命令建议导航
-      if (searchKeywordType.value === 'command' && commandSuggestions.value.length > 0) {
-        const commandItems = document.querySelectorAll(".command-result");
-        if (commandItems.length > 0) {
-          // 获取当前已聚焦的元素
-          const focusedItem = document.querySelector(".command-result.focus");
-          // 确定当前聚焦的元素在列表中的索引
-          const currentIndex = Array.from(commandItems).indexOf(focusedItem);
-          // 移除所有元素的选中状态
-          commandItems.forEach((item) => item.classList.toggle("focus", false));
-          // 计算下一个要聚焦的元素的索引
-          let nextIndex = keyCode === 38 ? currentIndex - 1 : currentIndex + 1;
-          // 确保索引不越界
-          nextIndex = Math.max(0, Math.min(nextIndex, commandItems.length - 1));
-          // 操作元素
-          if (nextIndex !== -1) {
-            commandItems[nextIndex].classList.toggle("focus", true);
-            mainInput.value = commandItems[nextIndex].dataset.command;
-          }
+      // 获取所有可导航的建议项
+      const getAllNavigableItems = () => {
+        const items = [];
+        
+        // 添加特殊建议项（直接访问、快捷翻译、iframe等）
+        if (specialallResultsRef.value) {
+          const specialItems = specialallResultsRef.value.querySelectorAll(".s-result");
+          items.push(...Array.from(specialItems));
         }
-      } 
-      // 处理搜索建议导航
-      else if (mainInput && allResultsRef.value && searchSuggestionsData.value[0]) {
-        const suggestionItems = allResultsRef.value.querySelectorAll(".s-result");
-        if (suggestionItems.length > 0) {
-          // 获取当前已聚焦的元素
-          const focusedItem = document.querySelector(".s-result.focus");
-          // 确定当前聚焦的元素在列表中的索引
-          const currentIndex = Array.from(suggestionItems).indexOf(focusedItem);
-          // 移除所有元素的选中状态
-          suggestionItems.forEach((item) => item.classList.toggle("focus", false));
-          // 计算下一个要聚焦的元素的索引
-          let nextIndex = keyCode === 38 ? currentIndex - 1 : currentIndex + 1;
-          // 确保索引不越界
-          nextIndex = Math.max(0, Math.min(nextIndex, suggestionItems.length - 1));
-          // 操作元素
-          if (nextIndex !== -1) {
-            suggestionItems[nextIndex].classList.toggle("focus", true);
-            mainInput.value = suggestionItems[nextIndex].querySelector(".text").textContent;
+        
+        // 添加搜索建议项
+        if (allResultsRef.value && searchSuggestionsData.value[0]) {
+          const suggestionItems = allResultsRef.value.querySelectorAll(".s-result");
+          items.push(...Array.from(suggestionItems));
+        }
+        
+        return items;
+      };
+      
+      const allItems = getAllNavigableItems();
+      
+      if (allItems.length > 0) {
+        // 获取当前已聚焦的元素
+        const focusedItem = document.querySelector(".s-result.focus, .command-result.focus");
+        // 确定当前聚焦的元素在列表中的索引
+        const currentIndex = Array.from(allItems).indexOf(focusedItem);
+        
+        // 移除所有元素的选中状态
+        allItems.forEach((item) => item.classList.remove("focus"));
+        document.querySelectorAll(".command-result").forEach((item) => item.classList.remove("focus"));
+        
+        // 计算下一个要聚焦的元素的索引
+        let nextIndex = keyCode === 38 ? currentIndex - 1 : currentIndex + 1;
+        
+        // 处理循环导航
+        if (nextIndex < 0) {
+          nextIndex = allItems.length - 1;
+        } else if (nextIndex >= allItems.length) {
+          nextIndex = 0;
+        }
+        
+        // 操作元素
+        if (nextIndex !== -1 && allItems[nextIndex]) {
+          allItems[nextIndex].classList.add("focus");
+          
+          // 根据不同类型的建议项更新输入框内容
+          const focusedElement = allItems[nextIndex];
+          if (focusedElement.dataset.command) {
+            // 命令建议
+            mainInput.value = focusedElement.dataset.command;
+          } else {
+            // 其他建议项（直接访问、快捷翻译、搜索建议等）
+            const textElement = focusedElement.querySelector(".text");
+            if (textElement) {
+              // 对于直接访问和快捷翻译，提取冒号后的内容
+              const textContent = textElement.textContent;
+              if (textContent.includes("：")) {
+                mainInput.value = textContent.split("：")[1] || textContent;
+              } else {
+                mainInput.value = textContent;
+              }
+            }
           }
         }
       }
     }
     // 13 回车
     if (keyCode === 13) {
-      // 如果是命令类型
-      if (searchKeywordType.value === 'command') {
-        // 首先检查是否有聚焦的命令项
-        const focusedCommand = document.querySelector(".command-result.focus");
-        if (focusedCommand) {
-          executeCommand(focusedCommand.dataset.command);
+      // 检查是否有聚焦的建议项
+      const focusedItem = document.querySelector(".s-result.focus, .command-result.focus");
+      
+      if (focusedItem) {
+        // 如果是命令建议项
+        if (focusedItem.classList.contains("command-result") && focusedItem.dataset.command) {
+          executeCommand(focusedItem.dataset.command);
           return;
         }
         
-        // 如果没有聚焦项，检查输入的命令是否完整匹配
+        // 如果是特殊建议项（直接访问、快捷翻译等）
+        if (focusedItem.classList.contains("s-result")) {
+          // 触发点击事件
+          focusedItem.click();
+          return;
+        }
+      }
+      
+      // 如果是命令类型且没有聚焦项
+      if (searchKeywordType.value === 'command') {
+        // 检查输入的命令是否完整匹配
         const commandResult = identifyCommand(mainInput.value);
         if (commandResult.type === 'command' && commandResult.command && !commandResult.isPartial) {
           executeCommand(mainInput.value);
@@ -433,6 +493,11 @@ const toSearch = (val, type = 1) => {
 watch(
   () => props.keyWord,
   (val) => {
+    // 当输入内容变化时，重置Tab补全状态
+    if (val !== searchKeyword.value) {
+      resetTabCompletion();
+    }
+    
     if (set.showSuggestions) {
       // 清空结果
       searchSuggestionsData.value = [];
@@ -533,5 +598,21 @@ defineExpose({ keyboardEvents, handleTabCompletion, openIframeViewer });
       }
     }
   }
+}
+/* Tab选中状态样式 */
+.command-result.tab-selected {
+  background: rgba(var(--primary-color-rgb), 0.2) !important;
+  border: 1px solid rgba(var(--primary-color-rgb), 0.4);
+  transform: scale(1.02);
+}
+
+.command-result.tab-selected .command-name {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.command-result.tab-selected .command-desc {
+  color: var(--primary-color);
+  opacity: 0.8;
 }
 </style>
