@@ -527,7 +527,7 @@ onUnmounted(() => {
 }
 
 .floating-window-container {
-  background-color: var(--main-background-light-color);
+  background-color: var(--main-background-color);
   border-radius: 16px;
   box-shadow: var(--main-box-shadow);
   overflow: hidden;
@@ -600,6 +600,12 @@ onUnmounted(() => {
   @extend %button-base;
   top: -16px;
   left: -16px;
+  background-color: var(--main-background-hover-color);
+  
+  &:hover {
+    background-color: var(--main-background-hover-color);
+    opacity: 0.8;
+  }
 }
 
 // 关闭按钮（右上角）
@@ -607,6 +613,11 @@ onUnmounted(() => {
   @extend %button-base;
   top: -16px;
   right: -16px;
+  background-color: var(--main-background-hover-color);
+  
+  &:hover {
+    background-color: #ff5f57;
+  }
 }
 
 // 调整大小手柄（右下角）
@@ -615,6 +626,13 @@ onUnmounted(() => {
   bottom: -16px;
   right: -16px;
   cursor: nw-resize;
+  background-color: var(--main-background-hover-color);
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  
+  &:hover {
+    opacity: 1;
+  }
 }
 
 // 缩放控制按钮（左下角）
@@ -622,8 +640,12 @@ onUnmounted(() => {
   @extend %button-base;
   bottom: -16px;
   left: -16px;
+  background-color: var(--main-background-hover-color);
   
   &:hover {
+    background-color: var(--main-background-hover-color);
+    opacity: 0.8;
+    
     .zoom-indicator {
       opacity: 1;
       transform: translateY(-40px) scale(1);
@@ -681,6 +703,7 @@ onUnmounted(() => {
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
   box-shadow: var(--main-box-shadow);
+  position: relative;
   
   &:hover {
     background-color: var(--main-background-hover-color);
@@ -690,6 +713,24 @@ onUnmounted(() => {
   
   &:active {
     transform: scale(0.98);
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 4px;
+    background-color: var(--main-background-hover-color);
+    border-radius: 2px;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+  }
+  
+  &:hover::before {
+    opacity: 1;
   }
 }
 
