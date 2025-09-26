@@ -6,8 +6,8 @@
         <n-scrollbar class="scrollbar">
           <n-grid
             class="all-shortcut"
-            responsive="screen"
-            cols="2 s:3 m:4 l:5"
+            :responsive="props.responsive"
+            :cols="props.cols"
             :x-gap="10"
             :y-gap="10"
           >
@@ -140,6 +140,18 @@ import { siteStore, setStore } from "@/stores";
 import SvgIcon from "@/components/SvgIcon.vue";
 import identifyInput from "@/utils/identifyInput";
 import { onMounted, onBeforeUnmount } from "vue";
+
+// 定义props，支持从父组件传递responsive属性
+const props = defineProps({
+  responsive: {
+    type: String,
+    default: 'screen'
+  },
+  cols: {
+    type: String,
+    default: '2 s:3 m:4 l:5'
+  }
+});
 
 const set = setStore();
 const site = siteStore();

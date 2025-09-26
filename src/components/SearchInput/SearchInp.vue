@@ -66,6 +66,11 @@
       @close="closeHelpWindow"
       @commandClick="handleHelpCommandClick"
     />
+    <!-- 捷径管理窗口 -->
+    <ShortcutWindow
+      :visible="shortcutWindowVisible"
+      @close="closeShortcutWindow"
+    />
   </div>
 </template>
 
@@ -75,6 +80,7 @@ import { statusStore, setStore } from "@/stores";
 import SearchEngine from "@/components/SearchInput/SearchEngine.vue";
 import Suggestions from "@/components/SearchInput/Suggestions.vue";
 import HelpWindow from "@/components/HelpWindow.vue";
+import ShortcutWindow from "@/components/ShortcutWindow.vue";
 import defaultEngine from "@/assets/defaultEngine.json";
 
 const set = setStore();
@@ -91,8 +97,11 @@ const searchInputRef = ref(null);
 const suggestionsRef = ref(null);
 
 // 帮助窗口状态
-  const helpWindowVisible = ref(false)
-  const helpCommandsByCategory = ref({});
+const helpWindowVisible = ref(false)
+const helpCommandsByCategory = ref({});
+
+// 捷径窗口状态
+const shortcutWindowVisible = ref(false);
 
 // 关闭搜索框
 const closeSearchInput = (check = false) => {
@@ -274,7 +283,13 @@ const handleCommandExecuted = (result) => {
     // 设置帮助窗口数据并显示
     helpCommandsByCategory.value = result.data.commandsByCategory || {};
     helpWindowVisible.value = true;
-  } else if (result.success) {
+  } 
+  // 特殊处理 shortcut 命令
+  else if (result.success && result.data && result.data.action === 'show_shortcut_window') {
+    console.log("🔗 显示捷径管理窗口");
+    shortcutWindowVisible.value = true;
+  } 
+  else if (result.success) {
     $message.success(result.message || "命令执行成功");
   } else {
     $message.error(result.message || "命令执行失败");
@@ -298,6 +313,11 @@ const handleTabCompletion = (completion) => {
   const closeHelpWindow = () => {
     helpWindowVisible.value = false
     helpCommandsByCategory.value = {}
+  }
+
+  // 关闭捷径窗口
+  const closeShortcutWindow = () => {
+    shortcutWindowVisible.value = false
   }
 
   // 处理帮助窗口中的命令点击

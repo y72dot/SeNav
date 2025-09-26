@@ -12,7 +12,7 @@
   >
     <div class="help-container">
       <div class="help-header">
-        <h2>📋 命令帮助</h2>
+        <h2>命令帮助</h2>
         <p>在搜索框中输入以下命令即可使用</p>
       </div>
       

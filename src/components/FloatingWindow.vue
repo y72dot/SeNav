@@ -12,21 +12,6 @@
       @mouseenter="showControls = true"
       @mouseleave="showControls = false"
     >
-      <!-- 拖拽区域（顶部边缘） -->
-      <div 
-        v-show="!isMinimized"
-        class="drag-handle"
-        :class="{ 'visible': showControls }"
-        @mousedown="startDrag"
-        title="按住拖拽移动窗口"
-      >
-        <div class="drag-indicator">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </div>
-
       <!-- 胶囊状态的拖拽区域 -->
       <div 
         v-show="isMinimized"
@@ -36,29 +21,21 @@
         title="拖拽移动 | 双击展开"
       >
         <div class="capsule-content">
-          <div class="capsule-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <line x1="9" y1="9" x2="15" y2="15"/>
-              <line x1="15" y1="9" x2="9" y2="15"/>
-            </svg>
+          <div class="capsule-text-container">
+            <span class="capsule-text">{{ displayTitle }}</span>
           </div>
-          <span class="capsule-text">窗口</span>
         </div>
       </div>
 
-      <!-- 最小化按钮（左上角） -->
+      <!-- 最小化按钮（左上角） - 拖动移动，双击最小化 -->
       <button 
         v-show="!isMinimized"
         class="minimize-btn"
         :class="{ 'visible': showControls }"
-        @click="minimizeWindow"
-        @dblclick="expandWindow"
-        :title="'最小化窗口'"
+        @mousedown="startMinimizeDrag"
+        @dblclick="minimizeWindow"
+        :title="'拖动移动窗口 | 双击最小化'"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 9l6 6 6-6"/>
-        </svg>
       </button>
 
       <!-- 关闭按钮（右上角） -->
@@ -69,10 +46,6 @@
         @click="handleClose"
         title="关闭窗口"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
       </button>
 
       <!-- 调整大小手柄（右下角） -->
@@ -83,9 +56,6 @@
         @mousedown="startResize"
         title="拖拽调整窗口大小"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15l-6 6m0-6l6 6m-6-6v6m6-6h-6"/>
-        </svg>
       </div>
 
       <!-- 缩放控制按钮（左下角） -->
@@ -97,12 +67,6 @@
         @dblclick="resetZoom"
         :title="`页面缩放: ${Math.round(zoomLevel * 100)}% - 拖拽调整，双击重置`"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="M21 21l-4.35-4.35"/>
-          <line x1="8" y1="11" x2="14" y2="11"/>
-          <line x1="11" y1="8" x2="11" y2="14"/>
-        </svg>
       </button>
 
       <!-- 窗口内容区域 -->
@@ -120,6 +84,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useTitleDetection } from '@/utils/titleDetection'
 
 const props = defineProps({
   // 显示状态
@@ -131,6 +96,16 @@ const props = defineProps({
   title: {
     type: String,
     default: ''
+  },
+  // 窗口副标题
+  subtitle: {
+    type: String,
+    default: ''
+  },
+  // 是否自动识别标题和副标题
+  autoDetectTitle: {
+    type: Boolean,
+    default: true
   },
   // 初始宽度
   width: {
@@ -194,6 +169,27 @@ const isZooming = ref(false)
 const showControls = ref(false)
 const isMinimized = ref(false) // 最小化状态
 
+// 使用标题检测composable
+const {
+  detectedTitle,
+  detectedSubtitle,
+  capsuleWidth,
+  displayTitle,
+  displaySubtitle,
+  detectTitleAndSubtitle,
+  updateCapsuleWidth,
+  setupIframeListeners
+} = useTitleDetection({
+  autoDetect: computed(() => props.autoDetectTitle),
+  defaultTitle: '窗口',
+  enableIframeDetection: true,
+  capsuleConfig: {
+    baseWidth: 120,
+    charWidth: 8,
+    maxWidth: 300
+  }
+})
+
 // 位置和尺寸状态
 const position = ref({ x: 100, y: 100 })
 const size = ref({ width: props.width, height: props.height })
@@ -207,7 +203,7 @@ const initialZoomLevel = ref(1) // 拖拽开始时的缩放级别
 // 计算当前实际显示的窗口尺寸
 const currentDisplaySize = computed(() => {
   return {
-    width: isMinimized.value ? 120 : size.value.width,
+    width: isMinimized.value ? capsuleWidth.value : size.value.width,
     height: isMinimized.value ? 40 : size.value.height
   }
 })
@@ -238,6 +234,23 @@ const contentStyle = computed(() => {
 
 // 拖动功能
 const startDrag = (e) => {
+  if (!props.draggable) return
+  
+  isDragging.value = true
+  dragStart.value = {
+    x: e.clientX - position.value.x,
+    y: e.clientY - position.value.y
+  }
+  
+  document.addEventListener('mousemove', handleDrag)
+  document.addEventListener('mouseup', stopDrag)
+  e.preventDefault()
+  
+  emit('drag-start')
+}
+
+// 最小化按钮拖动功能
+const startMinimizeDrag = (e) => {
   if (!props.draggable) return
   
   isDragging.value = true
@@ -451,6 +464,23 @@ watch(() => props.visible, (newVisible) => {
   if (newVisible) {
     updateSize()
     centerWindow()
+    // 延迟执行自动识别，确保DOM已渲染
+    setTimeout(() => {
+      const slotContent = windowContainer.value?.querySelector('.window-content')
+      if (slotContent) {
+        detectTitleAndSubtitle(slotContent, props.title, props.subtitle)
+        // 设置iframe监听器
+        setupIframeListeners(slotContent)
+      }
+    }, 100)
+  }
+})
+
+// 监听标题和副标题变化
+watch([() => props.title, () => props.subtitle], () => {
+  const slotContent = windowContainer.value?.querySelector('.window-content')
+  if (slotContent) {
+    detectTitleAndSubtitle(slotContent, props.title, props.subtitle)
   }
 })
 
@@ -459,6 +489,15 @@ onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
   updateSize()
   centerWindow()
+  // 初始化时执行自动识别
+  setTimeout(() => {
+    const slotContent = windowContainer.value?.querySelector('.window-content')
+    if (slotContent) {
+      detectTitleAndSubtitle(slotContent, props.title, props.subtitle)
+      // 设置iframe监听器
+      setupIframeListeners(slotContent)
+    }
+  }, 100)
 })
 
 onUnmounted(() => {
@@ -506,257 +545,89 @@ onUnmounted(() => {
   }
 }
 
-// 拖拽手柄（顶部边缘）
-.drag-handle {
+// 按钮基础样式
+%button-base {
   position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 6px;
-  cursor: move;
-  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
+  z-index: 10;
   opacity: 0;
-  transition: all 0.3s ease;
+  transform: scale(0.8);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  // 统一的背景样式
+  background: rgba(100, 100, 100, 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
   
   &.visible {
-    opacity: 1;
+    opacity: 0.3;
+    transform: scale(1);
   }
   
   &:hover {
-    height: 8px;
-    
-    .drag-indicator span {
-      background: rgba(128, 128, 128, 0.8);
-    }
+    transform: scale(1.1);
+    background: rgba(120, 120, 120, 0.9);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    opacity: 0.8;
   }
   
-  .drag-indicator {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    border-radius: 0 0 8px 8px;
-    background: rgba(128, 128, 128, 0.1);
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    background: rgba(60, 60, 60, 0.8);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     
-    span {
-      width: 12px;
-      height: 2px;
-      background: rgba(128, 128, 128, 0.6);
-      border-radius: 1px;
-      transition: all 0.2s ease;
+    &:hover {
+      background: rgba(80, 80, 80, 0.9);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+      opacity: 0.8;
     }
   }
 }
 
 // 置顶切换按钮（左上角）
 .minimize-btn {
-  position: absolute;
+  @extend %button-base;
   top: -16px;
   left: -16px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: rgba(52, 152, 219, 0.9);
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  z-index: 10;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-  
-  &.visible {
-    opacity: 1;
-    transform: scale(1);
-  }
-  
-  &:hover {
-    background: rgba(52, 152, 219, 1);
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-  
-  svg {
-    width: 14px;
-    height: 14px;
-    stroke-width: 2;
-  }
-  
-  @media (prefers-color-scheme: dark) {
-    background: rgba(74, 144, 226, 0.9);
-    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
-    
-    &:hover {
-      background: rgba(74, 144, 226, 1);
-      box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
-    }
-  }
 }
 
 // 关闭按钮（右上角）
 .close-btn {
-  position: absolute;
+  @extend %button-base;
   top: -16px;
   right: -16px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: rgba(255, 59, 48, 0.9);
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  z-index: 10;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
-  
-  &.visible {
-    opacity: 1;
-    transform: scale(1);
-  }
-  
-  &:hover {
-    background: rgba(255, 59, 48, 1);
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(255, 59, 48, 0.4);
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-  
-  svg {
-    width: 14px;
-    height: 14px;
-    stroke-width: 2.5;
-  }
-  
-  @media (prefers-color-scheme: dark) {
-    background: rgba(255, 69, 58, 0.9);
-    box-shadow: 0 4px 12px rgba(255, 69, 58, 0.3);
-    
-    &:hover {
-      background: rgba(255, 69, 58, 1);
-      box-shadow: 0 6px 20px rgba(255, 69, 58, 0.4);
-    }
-  }
 }
 
 // 调整大小手柄（右下角）
 .resize-handle {
-  position: absolute;
+  @extend %button-base;
   bottom: -16px;
   right: -16px;
-  width: 32px;
-  height: 32px;
   cursor: nw-resize;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 122, 255, 0.9);
-  border-radius: 50%;
-  color: white;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
-  
-  &.visible {
-    opacity: 1;
-    transform: scale(1);
-  }
-  
-  &:hover {
-    background: rgba(0, 122, 255, 1);
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-  
-  svg {
-    width: 14px;
-    height: 14px;
-    stroke-width: 2;
-  }
-  
-  @media (prefers-color-scheme: dark) {
-    background: rgba(10, 132, 255, 0.9);
-    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3);
-    
-    &:hover {
-      background: rgba(10, 132, 255, 1);
-      box-shadow: 0 6px 20px rgba(10, 132, 255, 0.4);
-    }
-  }
 }
 
 // 缩放控制按钮（左下角）
 .zoom-btn {
-  position: absolute;
+  @extend %button-base;
   bottom: -16px;
   left: -16px;
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: rgba(88, 86, 214, 0.9);
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  z-index: 10;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 12px rgba(88, 86, 214, 0.3);
-  
-  &.visible {
-    opacity: 1;
-    transform: scale(1);
-  }
   
   &:hover {
-    background: rgba(88, 86, 214, 1);
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(88, 86, 214, 0.4);
-    
     .zoom-indicator {
       opacity: 1;
       transform: translateY(-40px) scale(1);
     }
-  }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-  
-  svg {
-    width: 14px;
-    height: 14px;
-    stroke-width: 2;
   }
   
   .zoom-indicator {
@@ -794,16 +665,6 @@ onUnmounted(() => {
       }
     }
   }
-  
-  @media (prefers-color-scheme: dark) {
-    background: rgba(94, 92, 230, 0.9);
-    box-shadow: 0 4px 12px rgba(94, 92, 230, 0.3);
-    
-    &:hover {
-      background: rgba(94, 92, 230, 1);
-      box-shadow: 0 6px 20px rgba(94, 92, 230, 0.4);
-    }
-  }
 }
 
 // 胶囊状态的拖拽区域
@@ -835,29 +696,28 @@ onUnmounted(() => {
 .capsule-content {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   color: var(--main-text-color);
   font-size: 12px;
   font-weight: 500;
 }
 
-.capsule-icon {
-  width: 16px;
-  height: 16px;
+.capsule-text-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  svg {
-    width: 12px;
-    height: 12px;
-    stroke-width: 2;
-  }
+  min-width: 0;
+  flex: 1;
 }
 
 .capsule-text {
   font-size: 11px;
   opacity: 0.8;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 // 窗口内容区域
@@ -880,22 +740,12 @@ onUnmounted(() => {
     min-height: 400px;
   }
   
-  .drag-handle {
-    width: 80px;
-    height: 8px;
-  }
-  
   .close-btn,
   .resize-handle,
-  .pin-btn,
+  .minimize-btn,
   .zoom-btn {
     width: 36px;
     height: 36px;
-    
-    svg {
-      width: 16px;
-      height: 16px;
-    }
   }
 }
 
@@ -912,33 +762,18 @@ onUnmounted(() => {
     }
   }
   
-  .drag-handle {
-    width: 100px;
-    height: 10px;
-  }
-  
   .close-btn {
     top: -18px;
     right: -18px;
     width: 40px;
     height: 40px;
-    
-    svg {
-      width: 18px;
-      height: 18px;
-    }
   }
   
-  .pin-btn {
+  .minimize-btn {
     top: -18px;
     left: -18px;
     width: 40px;
     height: 40px;
-    
-    svg {
-      width: 18px;
-      height: 18px;
-    }
   }
   
   .resize-handle {

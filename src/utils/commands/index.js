@@ -88,6 +88,22 @@ const handleHelpCommand = (input) => {
 };
 
 /**
+ * shortcut 命令处理器
+ * @param {string} input 完整输入
+ * @returns {Object} 执行结果
+ */
+const handleShortcutCommand = (input) => {
+  return {
+    success: true,
+    type: RESULT_TYPES.SUCCESS,
+    message: '正在打开捷径管理窗口...',
+    data: { 
+      action: 'show_shortcut_window'
+    }
+  };
+};
+
+/**
  * test 命令处理器
  * @param {string} input 完整输入
  * @returns {Object} 执行结果
@@ -132,6 +148,19 @@ export const registerSystemCommands = () => {
     category: '系统',
     examples: ['/help'],
     handler: handleHelpCommand
+  });
+
+  // 注册 shortcut 命令
+  registerCommand({
+    name: '/shortcut',
+    pattern: '^/shortcut(\\s+.*)?$',
+    partialPattern: '^/s(h(o(r(t(c(u(t)?)?)?)?)?)?)?$',
+    type: COMMAND_TYPES.SIMPLE,
+    description: '打开捷径管理窗口',
+    usage: '/shortcut',
+    category: '工具',
+    examples: ['/shortcut'],
+    handler: handleShortcutCommand
   });
 
   // 注册 iframe 命令
