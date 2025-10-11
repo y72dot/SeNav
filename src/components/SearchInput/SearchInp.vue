@@ -78,6 +78,12 @@
       :visible="noteWindowVisible"
       @close="closeNoteWindow"
     />
+    
+    <!-- 设置窗口 -->
+    <SettingWindow
+      :visible="settingWindowVisible"
+      @close="closeSettingWindow"
+    />
   </div>
 </template>
 
@@ -90,6 +96,7 @@ import Suggestions from "@/components/SearchInput/Suggestions.vue";
 import HelpWindow from "@/components/HelpWindow.vue";
 import ShortcutWindow from "@/components/ShortcutWindow.vue";
 import NoteWindow from "@/components/NoteWindow.vue";
+import SettingWindow from "@/components/SettingWindow.vue";
 import defaultEngine from "@/assets/defaultEngine.json";
 
 const set = setStore();
@@ -119,6 +126,9 @@ const shortcutWindowVisible = ref(false);
 
 // 便签窗口状态
 const noteWindowVisible = ref(false);
+
+// 设置窗口状态
+const settingWindowVisible = ref(false);
 
 // 关闭搜索框
 const closeSearchInput = (check = false) => {
@@ -311,6 +321,11 @@ const handleCommandExecuted = (result) => {
     console.log("📝 显示便签管理窗口");
     noteWindowVisible.value = true;
   } 
+  // 特殊处理 setting 命令
+  else if (result.success && result.data && result.data.action === 'show_setting_window') {
+    console.log("⚙️ 显示设置窗口");
+    settingWindowVisible.value = true;
+  } 
   else if (result.success) {
     $message.success(result.message || "命令执行成功");
   } else {
@@ -361,6 +376,11 @@ const handleInputBlur = () => {
   // 关闭便签窗口
   const closeNoteWindow = () => {
     noteWindowVisible.value = false
+  }
+
+  // 关闭设置窗口
+  const closeSettingWindow = () => {
+    settingWindowVisible.value = false
   }
 
   // 处理帮助窗口中的命令点击

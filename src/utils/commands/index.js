@@ -120,6 +120,22 @@ const handleNoteCommand = (input) => {
 };
 
 /**
+ * setting 命令处理器
+ * @param {string} input 完整输入
+ * @returns {Object} 执行结果
+ */
+const handleSettingCommand = (input) => {
+  return {
+    success: true,
+    type: RESULT_TYPES.SUCCESS,
+    message: '正在打开设置窗口...',
+    data: { 
+      action: 'show_setting_window'
+    }
+  };
+};
+
+/**
  * test 命令处理器
  * @param {string} input 完整输入
  * @returns {Object} 执行结果
@@ -190,6 +206,19 @@ export const registerSystemCommands = () => {
     category: '工具',
     examples: ['/note'],
     handler: handleNoteCommand
+  });
+
+  // 注册 setting 命令
+  registerCommand({
+    name: '/setting',
+    pattern: '^/setting(\\s+.*)?$',
+    partialPattern: '^/s(e(t(t(i(n(g)?)?)?)?)?)?$',
+    type: COMMAND_TYPES.SIMPLE,
+    description: '打开设置窗口',
+    usage: '/setting',
+    category: '工具',
+    examples: ['/setting'],
+    handler: handleSettingCommand
   });
 
   // 注册 iframe 命令
