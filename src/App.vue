@@ -62,6 +62,7 @@
 <script setup>
 import { onMounted, nextTick, watch, ref } from "vue";
 import { statusStore, setStore } from "@/stores";
+import { useWindowManagerStore } from "@/stores/windowManager";
 import { getGreeting } from "@/utils/timeTools";
 import Provider from "@/components/Provider.vue";
 import Cover from "@/components/Cover.vue";
@@ -72,6 +73,7 @@ import Footer from "@/components/Footer.vue";
 
 const set = setStore();
 const status = statusStore();
+const windowManager = useWindowManagerStore();
 const mainClickable = ref(false);
 
 // 获取配置
@@ -85,7 +87,17 @@ const mainContextmenu = (event) => {
 
 // 全局键盘事件
 const mainPressKeyboard = (event) => {
-  // 只在主界面状态下响应键盘事件
+  // ESC键处理 - 关闭当前聚焦的窗口
+  if (event.key === 'Escape') {
+    const closedWindowId = windowManager.closeFocusedWindow();
+    if (closedWindowId) {
+      // 如果成功关闭了窗口，阻止默认行为
+      event.preventDefault();
+      return;
+    }
+  }
+  
+  // 只在主界面状态下响应其他键盘事件
   if (status.siteStatus !== 'normal') {
     return;
   }

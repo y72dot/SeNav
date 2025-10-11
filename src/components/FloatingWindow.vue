@@ -464,7 +464,14 @@ const handleOverlayClick = () => {
 // 键盘事件处理
 const handleKeydown = (e) => {
   if (e.key === 'Escape' && props.closeOnEscape) {
-    handleClose()
+    // 检查当前窗口是否是聚焦窗口（z-index最高的窗口）
+    const topWindow = windowManager.topWindow
+    if (topWindow && topWindow.id === windowId.value) {
+      console.log(`🎯 ESC键关闭聚焦窗口: ${windowId.value}`)
+      handleClose()
+    } else {
+      console.log(`🎯 ESC键忽略，当前窗口不是聚焦窗口: ${windowId.value}`)
+    }
   }
 }
 

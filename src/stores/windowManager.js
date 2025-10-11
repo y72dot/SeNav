@@ -263,6 +263,31 @@ export const useWindowManagerStore = defineStore('windowManager', {
     setSearchBoxFocused(isFocused) {
       this.isSearchBoxFocused = isFocused
       this.updateSearchBoxZIndex()
+    },
+
+    /**
+     * 关闭当前聚焦的窗口（z-index最高的窗口）
+     * @returns {string|null} 被关闭窗口的ID，如果没有窗口则返回null
+     */
+    closeFocusedWindow() {
+      const focusedWindow = this.topWindow
+      if (focusedWindow) {
+        console.log(`🎯 关闭聚焦窗口: ${focusedWindow.id}, 类型: ${focusedWindow.type}`)
+        
+        // 触发窗口关闭事件
+        const event = new CustomEvent('close-focused-window', {
+          detail: {
+            windowId: focusedWindow.id,
+            windowType: focusedWindow.type
+          }
+        })
+        document.dispatchEvent(event)
+        
+        return focusedWindow.id
+      }
+      
+      console.log('🎯 没有聚焦的窗口可关闭')
+      return null
     }
   }
 })
