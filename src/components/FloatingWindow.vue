@@ -2,6 +2,7 @@
   <div
     v-if="visible"
     class="floating-window-overlay"
+    :style="{ zIndex: currentZIndex }"
     @click.self="handleOverlayClick"
   >
     <div
@@ -11,6 +12,7 @@
       :class="{ 'no-drag': isDragging || isResizing || isZooming }"
       @mouseenter="showControls = true"
       @mouseleave="showControls = false"
+      @mousedown="bringToFront"
     >
       <!-- 胶囊状态的拖拽区域 -->
       <div 
@@ -85,6 +87,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useTitleDetection } from '@/utils/titleDetection'
+import { windowManagerStore } from '@/stores/index'
 
 const props = defineProps({
   // 显示状态
@@ -156,10 +159,23 @@ const props = defineProps({
   initialPosition: {
     type: Object,
     default: () => ({ x: null, y: null })
+  },
+  // 窗口类型 (用于窗口管理)
+  windowType: {
+    type: String,
+    default: 'default'
+  },
+  // 窗口数据 (用于窗口管理)
+  windowData: {
+    type: Object,
+    default: () => ({})
   }
 })
 
 const emit = defineEmits(['close', 'drag-start', 'drag-end', 'resize-start', 'resize-end', 'pin-change', 'zoom-change'])
+
+// 窗口管理store
+const windowManager = windowManagerStore()
 
 // 组件状态
 const windowContainer = ref(null)
@@ -168,6 +184,16 @@ const isResizing = ref(false)
 const isZooming = ref(false)
 const showControls = ref(false)
 const isMinimized = ref(false) // 最小化状态
+
+// 窗口唯一标识
+const windowId = ref(null)
+
+// 创建一个响应式的 z-index 计算属性
+const currentZIndex = computed(() => {
+  if (!windowId.value) return 999
+  const window = windowManager.windows.get(windowId.value)
+  return window ? window.zIndex : 999
+})
 
 // 使用标题检测composable
 const {
@@ -216,7 +242,7 @@ const containerStyle = computed(() => {
     top: `${position.value.y}px`,
     width: `${currentDisplaySize.value.width}px`,
     height: `${currentDisplaySize.value.height}px`,
-    zIndex: 999,
+    zIndex: currentZIndex.value,
     borderRadius: isMinimized.value ? '20px' : '12px',
     overflow: 'hidden'
   }
@@ -343,6 +369,10 @@ const minimizeWindow = () => {
     // 保存当前尺寸
     originalSize.value = { ...size.value }
     isMinimized.value = true
+    // 最小化窗口时更新状态
+    if (windowId.value) {
+      windowManager.updateWindow(windowId.value, { minimized: true })
+    }
     emit('minimize', true)
   }
 }
@@ -363,6 +393,12 @@ const expandWindow = () => {
         x: Math.max(0, Math.min(position.value.x, maxX)),
         y: Math.max(0, Math.min(position.value.y, maxY))
       }
+    }
+    
+    // 展开窗口时更新状态并置于最前面
+    if (windowId.value) {
+      windowManager.updateWindow(windowId.value, { minimized: false })
+      windowManager.bringToFront(windowId.value)
     }
     
     emit('minimize', false)
@@ -432,6 +468,18 @@ const handleKeydown = (e) => {
   }
 }
 
+// 将窗口置于最前面
+const bringToFront = (event) => {
+  // 如果是拖拽、调整大小或缩放操作，不触发置顶
+  if (isDragging.value || isResizing.value || isZooming.value) {
+    return
+  }
+  
+  if (windowId.value) {
+    windowManager.bringToFront(windowId.value)
+  }
+}
+
 // 居中窗口
 const centerWindow = () => {
   const { x, y } = props.initialPosition
@@ -464,6 +512,11 @@ watch(() => props.visible, (newVisible) => {
   if (newVisible) {
     updateSize()
     centerWindow()
+    // 窗口显示时自动置于最前面
+    if (windowId.value) {
+      windowManager.bringToFront(windowId.value)
+      windowManager.updateWindow(windowId.value, { visible: true })
+    }
     // 延迟执行自动识别，确保DOM已渲染
     setTimeout(() => {
       const slotContent = windowContainer.value?.querySelector('.window-content')
@@ -473,6 +526,11 @@ watch(() => props.visible, (newVisible) => {
         setupIframeListeners(slotContent)
       }
     }, 100)
+  } else {
+    // 窗口隐藏时更新状态
+    if (windowId.value) {
+      windowManager.updateWindow(windowId.value, { visible: false })
+    }
   }
 })
 
@@ -489,6 +547,16 @@ onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
   updateSize()
   centerWindow()
+  
+  // 注册窗口到管理器
+  windowId.value = windowManager.registerWindow({
+    type: props.windowType,
+    title: props.title || '窗口',
+    data: props.windowData,
+    visible: props.visible,
+    minimized: isMinimized.value
+  })
+  
   // 初始化时执行自动识别
   setTimeout(() => {
     const slotContent = windowContainer.value?.querySelector('.window-content')
@@ -501,6 +569,11 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // 从管理器中注销窗口
+  if (windowId.value) {
+    windowManager.unregisterWindow(windowId.value)
+  }
+  
   document.removeEventListener('keydown', handleKeydown)
   document.removeEventListener('mousemove', handleDrag)
   document.removeEventListener('mouseup', stopDrag)
@@ -519,7 +592,6 @@ onUnmounted(() => {
   width: 100vw;
   height: 100vh;
   background-color: transparent;
-  z-index: 999;
   display: flex;
   align-items: center;
   justify-content: center;
