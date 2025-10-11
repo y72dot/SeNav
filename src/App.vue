@@ -18,6 +18,8 @@
         <SearchInp @contextmenu.stop />
         <AllFunc @contextmenu.stop />
         <Footer />
+        <!-- 全局虚化遮罩 -->
+        <BlurOverlay />
         <!-- 状态切换 -->
         <Transition name="fade">
           <div
@@ -70,6 +72,7 @@ import WeatherTime from "@/components/WeatherTime.vue";
 import SearchInp from "@/components/SearchInput/SearchInp.vue";
 import AllFunc from "@/components/AllFunc/AllFunc.vue";
 import Footer from "@/components/Footer.vue";
+import BlurOverlay from "@/components/BlurOverlay.vue";
 
 const set = setStore();
 const status = statusStore();

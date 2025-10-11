@@ -8,17 +8,7 @@
     ]"
     @click.stop
   >
-    <!-- 搜索框遮罩 -->
-    <div
-      v-if="status.siteStatus === 'focus'"
-      class="mask"
-      @click="closeSearchInput(false)"
-      @contextmenu.stop="
-        (event) => {
-          event.preventDefault();
-        }
-      "
-    />
+
     <!-- 主搜索框 -->
     <div class="all" ref="searchAllRef" @animationend="inputAnimationEnd" :style="{ zIndex: searchBoxZIndex, '--search-box-z-index': searchBoxZIndex }">
       <div class="engine" title="切换搜索引擎" @click="changeEngine">
@@ -398,7 +388,7 @@ const handleInputBlur = () => {
 </script>
 
 <style lang="scss" scoped>
-.search-input {
+  .search-input {
   position: absolute;
   display: flex;
   flex-direction: row;
@@ -406,14 +396,6 @@ const handleInputBlur = () => {
   max-width: 680px;
   width: calc(100% - 60px);
   transition: width 0.35s linear;
-  .mask {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
-  }
   .all {
     display: flex;
     flex-direction: row;
