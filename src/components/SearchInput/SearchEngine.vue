@@ -1,6 +1,6 @@
 <template>
   <Transition name="fadeDown" mode="out-in">
-    <div v-if="status.engineChangeStatus" class="engine-choose">
+    <div v-if="status.engineChangeStatus" class="engine-choose" :style="{ zIndex: searchComponentsZIndex, '--search-components-z-index': searchComponentsZIndex }">
       <n-scrollbar style="max-height: 44.5vh">
         <n-grid class="all-engine" responsive="screen" cols="2 s:3 m:4 l:4" :x-gap="10" :y-gap="10">
           <n-grid-item
@@ -58,7 +58,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import {
   NSpace,
   NButton,
@@ -71,10 +71,15 @@ import {
   NInput,
 } from "naive-ui";
 import { statusStore, setStore } from "@/stores";
+import { useWindowManagerStore } from "@/stores/windowManager";
 import defaultEngine from "@/assets/defaultEngine.json";
 
 const set = setStore();
 const status = statusStore();
+const windowManager = useWindowManagerStore();
+
+// 动态z-index计算
+const searchComponentsZIndex = computed(() => windowManager.searchComponentsZIndex);
 
 // 自定义搜索引擎数据
 const customEngineRef = ref(null);
@@ -142,7 +147,7 @@ const setCustomEngine = () => {
   backdrop-filter: blur(30px) saturate(1.25);
   border-radius: 16px;
   box-sizing: border-box;
-  z-index: 1;
+  z-index: var(--search-components-z-index, 1);
   .all-engine {
     padding: 10px;
     box-sizing: border-box;

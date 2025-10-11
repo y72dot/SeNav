@@ -13,7 +13,15 @@ export const useWindowManagerStore = defineStore('windowManager', {
     // 当前最高z-index值
     maxZIndex: 1000,
     // 窗口ID计数器
-    windowIdCounter: 0
+    windowIdCounter: 0,
+    // 搜索框z-index
+    searchBoxZIndex: 1,
+    // 搜索框附属组件z-index（搜索引擎切换、搜索建议）
+    searchComponentsZIndex: 2,
+    // 时间组件z-index
+    timeComponentZIndex: 1,
+    // 搜索框聚焦状态
+    isSearchBoxFocused: false
   }),
 
   getters: {
@@ -71,6 +79,9 @@ export const useWindowManagerStore = defineStore('windowManager', {
       
       this.windows.set(windowId, window)
       
+      // 更新UI组件的z-index
+      this.updateUIComponentsZIndex()
+      
       console.log(`🪟 窗口已注册: ${windowId}, z-index: ${zIndex}, 类型: ${windowInfo.type}`)
       return windowId
     },
@@ -83,6 +94,10 @@ export const useWindowManagerStore = defineStore('windowManager', {
       if (this.windows.has(windowId)) {
         const window = this.windows.get(windowId)
         this.windows.delete(windowId)
+        
+        // 更新UI组件的z-index
+        this.updateUIComponentsZIndex()
+        
         console.log(`🗑️ 窗口已注销: ${windowId}, 类型: ${window.type}`)
       }
     },
@@ -109,6 +124,9 @@ export const useWindowManagerStore = defineStore('windowManager', {
       
       window.zIndex = newZIndex
       this.windows.set(windowId, window)
+      
+      // 更新UI组件的z-index
+      this.updateUIComponentsZIndex()
       
       console.log(`⬆️ 窗口已置顶: ${windowId}, 新z-index: ${newZIndex}`)
       return newZIndex
@@ -181,6 +199,70 @@ export const useWindowManagerStore = defineStore('windowManager', {
      */
     getWindowsByType(type) {
       return Array.from(this.windows.values()).filter(window => window.type === type)
+    },
+
+    /**
+     * 更新搜索框z-index
+     * 当有窗口处于顶层时，搜索框应该在所有窗口之下
+     * 当搜索框聚焦时，应该置于所有窗口之上
+     */
+    updateSearchBoxZIndex() {
+      if (this.isSearchBoxFocused) {
+        // 搜索框聚焦时，置于所有窗口之上
+        this.searchBoxZIndex = this.maxZIndex + 1
+        // 附属组件应该在搜索框之上
+        this.searchComponentsZIndex = this.maxZIndex + 2
+        console.log('🔍 搜索框聚焦，z-index已更新为:', this.searchBoxZIndex)
+        console.log('🔧 搜索框附属组件z-index已更新为:', this.searchComponentsZIndex)
+      } else if (this.windows.size > 0) {
+        // 如果有窗口存在，搜索框应该在最低窗口之下
+        const minWindowZIndex = Math.min(...Array.from(this.windows.values()).map(w => w.zIndex))
+        this.searchBoxZIndex = Math.max(1, minWindowZIndex - 1)
+        // 附属组件应该在搜索框之上但仍在窗口之下
+        this.searchComponentsZIndex = Math.max(2, minWindowZIndex - 1)
+        console.log('🔍 搜索框失焦，z-index已更新为:', this.searchBoxZIndex)
+        console.log('🔧 搜索框附属组件z-index已更新为:', this.searchComponentsZIndex)
+      } else {
+        // 如果没有窗口，搜索框使用默认z-index
+        this.searchBoxZIndex = 1
+        this.searchComponentsZIndex = 2
+        console.log('🔍 搜索框z-index已更新为:', this.searchBoxZIndex)
+        console.log('🔧 搜索框附属组件z-index已更新为:', this.searchComponentsZIndex)
+      }
+    },
+
+    /**
+     * 更新时间组件z-index
+     * 当有窗口处于顶层时，时间组件应该在所有窗口之下
+     */
+    updateTimeComponentZIndex() {
+      if (this.windows.size > 0) {
+        // 如果有窗口存在，时间组件应该在最低窗口之下
+        const minWindowZIndex = Math.min(...Array.from(this.windows.values()).map(w => w.zIndex))
+        this.timeComponentZIndex = Math.max(1, minWindowZIndex - 1)
+      } else {
+        // 如果没有窗口，时间组件使用默认z-index
+        this.timeComponentZIndex = 1
+      }
+      console.log('⏰ 时间组件z-index已更新为:', this.timeComponentZIndex)
+    },
+
+    /**
+     * 更新所有UI组件的z-index
+     * 在窗口注册、注销、置顶时调用
+     */
+    updateUIComponentsZIndex() {
+      this.updateSearchBoxZIndex()
+      this.updateTimeComponentZIndex()
+    },
+
+    /**
+     * 设置搜索框聚焦状态
+     * @param {boolean} isFocused - 是否聚焦
+     */
+    setSearchBoxFocused(isFocused) {
+      this.isSearchBoxFocused = isFocused
+      this.updateSearchBoxZIndex()
     }
   }
 })

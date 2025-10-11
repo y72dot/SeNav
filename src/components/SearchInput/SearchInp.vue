@@ -20,7 +20,7 @@
       "
     />
     <!-- 主搜索框 -->
-    <div class="all" ref="searchAllRef" @animationend="inputAnimationEnd">
+    <div class="all" ref="searchAllRef" @animationend="inputAnimationEnd" :style="{ zIndex: searchBoxZIndex, '--search-box-z-index': searchBoxZIndex }">
       <div class="engine" title="切换搜索引擎" @click="changeEngine">
         <Transition name="fade" mode="out-in">
           <SvgIcon
@@ -40,7 +40,8 @@
         title="请输入搜索内容"
         :placeholder="inputTip"
         v-model="status.searchInputValue"
-        @focus="status.setSiteStatus('focus')"
+        @focus="handleInputFocus"
+        @blur="handleInputBlur"
         @click.stop="status.setEngineChangeStatus(false)"
         @keydown.stop="pressKeyboard"
         @input="handleInput"
@@ -81,8 +82,9 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from "vue";
+import { ref, nextTick, computed } from "vue";
 import { statusStore, setStore } from "@/stores";
+import { useWindowManagerStore } from "@/stores/windowManager";
 import SearchEngine from "@/components/SearchInput/SearchEngine.vue";
 import Suggestions from "@/components/SearchInput/Suggestions.vue";
 import HelpWindow from "@/components/HelpWindow.vue";
@@ -92,12 +94,17 @@ import defaultEngine from "@/assets/defaultEngine.json";
 
 const set = setStore();
 const status = statusStore();
+const windowManager = useWindowManagerStore();
 
 // 搜索框配置
 const inputTip = import.meta.env.VITE_INPUT_TIP ?? "想要搜点什么";
 
 // 搜索框数据
 const searchAllRef = ref(null);
+
+// 动态z-index计算
+const searchBoxZIndex = computed(() => windowManager.searchBoxZIndex);
+const searchComponentsZIndex = computed(() => windowManager.searchComponentsZIndex);
 const searchInputRef = ref(null);
 
 // 搜索建议子组件
@@ -329,6 +336,17 @@ const handleTabCompletion = (completion) => {
   });
 };
 
+// 处理输入框聚焦事件
+const handleInputFocus = () => {
+  status.setSiteStatus('focus');
+  windowManager.setSearchBoxFocused(true);
+};
+
+// 处理输入框失焦事件
+const handleInputBlur = () => {
+  windowManager.setSearchBoxFocused(false);
+};
+
   // 关闭帮助窗口
   const closeHelpWindow = () => {
     helpWindowVisible.value = false
@@ -393,7 +411,7 @@ const handleTabCompletion = (completion) => {
       transform 0.3s,
       background-color 0.3s,
       opacity 0.5s;
-    z-index: 1;
+    z-index: var(--search-box-z-index, 1);
     .input {
       display: flex;
       justify-content: center;

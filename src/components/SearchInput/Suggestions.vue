@@ -8,7 +8,7 @@
         !status.engineChangeStatus
       "
       class="suggestions"
-      :style="{ height: `${suggestionsHeights}px` }"
+      :style="{ height: `${suggestionsHeights}px`, zIndex: searchComponentsZIndex, '--search-components-z-index': searchComponentsZIndex }"
     >
       <n-scrollbar style="max-height: 45vh">
         <!-- 快捷操作 -->
@@ -113,8 +113,9 @@
 
 <script setup>
 import { NScrollbar } from "naive-ui";
-import { nextTick, ref, watch } from "vue";
+import { nextTick, ref, watch, computed } from "vue";
 import { statusStore, setStore } from "@/stores";
+import { useWindowManagerStore } from "@/stores/windowManager";
 import { getSearchSuggestions } from "@/api";
 import debounce from "@/utils/debounce";
 import identifyInput from "@/utils/identifyInput";
@@ -123,7 +124,11 @@ import IframeViewer from "@/components/IframeViewer.vue";
 
 const set = setStore();
 const status = statusStore();
+const windowManager = useWindowManagerStore();
 const emit = defineEmits(["toSearch", "commandExecuted", "tabCompletion"]);
+
+// 动态z-index计算
+const searchComponentsZIndex = computed(() => windowManager.searchComponentsZIndex);
 
 // 搜索关键字
 const searchKeyword = ref(null);
@@ -535,7 +540,7 @@ defineExpose({ keyboardEvents, handleTabCompletion, openIframeViewer });
     height 0.2s ease,
     opacity 0.3s ease,
     transform 0.3s ease;
-  z-index: 1;
+  z-index: var(--search-components-z-index, 1);
 
   .all-result,
   .special-result {

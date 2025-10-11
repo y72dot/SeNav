@@ -10,6 +10,7 @@
       set.showLunar ? 'lunar' : null,
       set.timeStyle,
     ]"
+    :style="{ zIndex: timeComponentZIndex }"
     @click.stop
   >
     <div
@@ -53,12 +54,14 @@
 
 <script setup>
 import { getCurrentTime } from "@/utils/timeTools";
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch, computed } from "vue";
 import { statusStore, setStore } from "@/stores";
+import { useWindowManagerStore } from "@/stores/windowManager";
 import { getAdcode, getWeather } from "@/api";
 
 const set = setStore();
 const status = statusStore();
+const windowManager = useWindowManagerStore();
 
 // 时间数据
 const timeData = ref({});
@@ -67,6 +70,9 @@ const timeInterval = ref(null);
 // 天气数据
 const weatherData = ref(null);
 const weatherKey = import.meta.env.VITE_WEATHER_KEY;
+
+// 动态z-index计算
+const timeComponentZIndex = computed(() => windowManager.timeComponentZIndex);
 
 // 更新时间
 const updateTimeData = () => {
@@ -149,7 +155,7 @@ onBeforeUnmount(() => {
     transform 0.3s,
     opacity 0.5s,
     margin-bottom 0.3s;
-  z-index: 1;
+  z-index: var(--time-component-z-index, 1);
   .time {
     cursor: pointer;
     font-size: 3rem;
