@@ -181,23 +181,13 @@ const completeCommand = (command) => {
   }
 };
 
-// 处理TAB补全 - 重构为循环选择
+// 处理TAB补全 - 改为只补全到第一个分歧（公共前缀）
 const handleTabCompletion = () => {
-  if (searchKeywordType.value === 'command' && commandSuggestions.value.length > 0) {
-    // 如果是第一次按Tab或者不在Tab补全状态，初始化
-    if (!isTabCompleting.value) {
-      isTabCompleting.value = true;
-      tabCompletionIndex.value = 0;
-    } else {
-      // 循环到下一个命令
-      tabCompletionIndex.value = (tabCompletionIndex.value + 1) % commandSuggestions.value.length;
-    }
-    
-    // 获取当前选中的命令
-    const selectedCommand = commandSuggestions.value[tabCompletionIndex.value];
-    if (selectedCommand) {
-      // 填入输入框，但不清空建议列表
-      emit("tabCompletion", selectedCommand.name);
+  // 仅在命令或部分命令时触发
+  if (searchKeywordType.value === 'command' || searchKeywordType.value === 'command-partial') {
+    const completion = getTabCompletion(searchKeyword.value);
+    if (completion) {
+      emit("tabCompletion", completion);
       return true;
     }
   }
@@ -498,9 +488,17 @@ const toSearch = (val, type = 1) => {
 watch(
   () => props.keyWord,
   (val) => {
-    // 当输入内容变化时，重置Tab补全状态
+    // 当输入内容变化时，重置Tab补全状态（Tab补全过程中不重置）
     if (val !== searchKeyword.value) {
-      resetTabCompletion();
+      if (!isTabCompleting.value) {
+        resetTabCompletion();
+      }
+    }
+
+    // Tab补全过程中，保持建议列表稳定，不触发重新计算
+    if (isTabCompleting.value) {
+      searchKeyword.value = val;
+      return;
     }
     
     if (set.showSuggestions) {

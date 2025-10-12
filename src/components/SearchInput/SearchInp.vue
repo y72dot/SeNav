@@ -256,8 +256,11 @@ const inputAnimationEnd = () => {
 
 // 键盘事件
 const pressKeyboard = (event) => {
-  // 获取键的键码
   const keyCode = event.keyCode;
+  // Tab键阻止默认行为避免焦点切换
+  if (keyCode === 9) {
+    event.preventDefault();
+  }
   // 子组件事件
   suggestionsRef.value?.keyboardEvents(keyCode, event);
 };
@@ -328,13 +331,13 @@ const handleCommandExecuted = (result) => {
 // 处理TAB补全
 const handleTabCompletion = (completion) => {
   console.log("TAB补全：", completion);
-  // 更新搜索框内容
+  // 更新搜索框内容但避免触发失焦或重置
   status.setSearchInputValue(completion);
-  // 保持焦点，不关闭搜索框
+  // 保持聚焦
   nextTick(() => {
-    searchInputRef.value?.focus();
-    // 确保光标在末尾
     const input = searchInputRef.value;
+    input?.focus();
+    // 确保光标在末尾
     if (input) {
       input.setSelectionRange(completion.length, completion.length);
     }
