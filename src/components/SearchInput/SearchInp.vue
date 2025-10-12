@@ -352,6 +352,11 @@ const handleInputFocus = () => {
 
 // 处理输入框失焦事件
 const handleInputBlur = () => {
+  // 如果站点状态仍为 'focus'（例如点击了搜索建议或引擎切换面板），保持搜索相关组件的前置层级，避免虚化遮罩遮挡
+  if (status.siteStatus === 'focus') {
+    windowManager.setSearchBoxFocused(true);
+    return;
+  }
   windowManager.setSearchBoxFocused(false);
 };
 

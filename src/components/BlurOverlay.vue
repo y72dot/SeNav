@@ -4,7 +4,7 @@
       v-if="visible" 
       class="blur-overlay"
       :style="{ zIndex: blurOverlayZIndex }"
-      @click="handleClick"
+      @click.stop="handleClick"
     >
     </div>
   </Transition>
@@ -40,6 +40,9 @@ const handleClick = () => {
   // 确保搜索框失焦
   const searchInput = document.getElementById("main-input");
   searchInput?.blur();
+  
+  // 同步窗口管理器状态，避免维持搜索组件的前置层级
+  windowManager.setSearchBoxFocused(false);
   
   // 确保main元素获得焦点
   const mainElement = document.getElementById("main");
