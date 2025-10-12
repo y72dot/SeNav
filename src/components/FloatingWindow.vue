@@ -701,16 +701,20 @@ onUnmounted(() => {
 
 // 调整大小手柄（右下角）
 .resize-handle {
+  // 保持统一的按钮基础样式与位置
   @extend %button-base;
   bottom: -16px;
   right: -16px;
   cursor: nw-resize;
   background-color: var(--main-background-hover-color);
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
+  // 移除固定不透明度，统一交由 %button-base 与 .visible 控制
+  // opacity: 0.6;
+  // transition: opacity 0.2s ease;
   
   &:hover {
-    opacity: 1;
+    // 与其他按钮保持一致的 hover 颜色与透明度
+    background-color: var(--main-background-hover-color);
+    opacity: 0.8;
   }
 }
 
@@ -795,21 +799,11 @@ onUnmounted(() => {
   }
   
   &::before {
-    content: '';
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 4px;
-    background-color: var(--main-background-hover-color);
-    border-radius: 2px;
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
+    /* 已移除顶部指示条伪元素样式 */
   }
   
   &:hover::before {
-    opacity: 1;
+    /* 已禁用 hover 时的伪元素显示 */
   }
 }
 

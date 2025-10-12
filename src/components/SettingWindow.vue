@@ -8,6 +8,7 @@
     :close-on-overlay="true"
     :close-on-escape="true"
     content-class="setting-content"
+    :title="'设置'"
     @close="handleClose"
   >
     <div class="setting-container">

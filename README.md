@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/version-2.0.0%20beta%206-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Vue](https://img.shields.io/badge/Vue-3.x-brightgreen) ![Vite](https://img.shields.io/badge/Vite-5.x-646CFF)
 
-![SeNav.png](https://s2.loli.net/2022/07/15/FE6U2BJCynHDep8.jpg)
+![SeNav.png](https://easyimage.72dot.cn/i/2025/10/12/vqtb0m.webp)
 
 > ⚠️ **项目开发中**  
 > 快速预览：[https://y72dot.github.io/SeNav/](https://y72dot.github.io/SeNav/)  
