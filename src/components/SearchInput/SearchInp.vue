@@ -257,6 +257,12 @@ const inputAnimationEnd = () => {
 // 键盘事件
 const pressKeyboard = (event) => {
   const keyCode = event.keyCode;
+  // ESC 键退出搜索聚焦
+  if (keyCode === 27) {
+    event.preventDefault();
+    closeSearchInput(false);
+    return;
+  }
   // Tab键阻止默认行为避免焦点切换
   if (keyCode === 9) {
     event.preventDefault();
@@ -268,6 +274,8 @@ const pressKeyboard = (event) => {
 // 更换搜索引擎
 const changeEngine = () => {
   status.setSiteStatus("focus", false);
+  // 未聚焦点击引擎按钮也需要前置搜索相关组件层级，避免虚化遮罩覆盖
+  windowManager.setSearchBoxFocused(true);
   status.setEngineChangeStatus(!status.engineChangeStatus);
 };
 
