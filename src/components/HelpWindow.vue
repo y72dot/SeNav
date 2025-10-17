@@ -66,8 +66,7 @@ const handleClose = () => {
 const handleCommandClick = (commandName) => {
   // 发送命令点击事件给父组件
   emit('commandClick', commandName)
-  // 关闭帮助窗口
-  emit('close')
+  // 不再自动关闭帮助窗口，让用户可以继续查看其他命令
 }
 </script>
 
