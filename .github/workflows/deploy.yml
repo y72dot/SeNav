@@ -34,8 +34,9 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
       
-    - name: Build
-      run: pnpm run build  # 确保输出目录是 ./dist
+    # === 构建 GitHub Pages 版本 ===
+    - name: Build for GitHub Pages
+      run: pnpm run build  # 使用默认配置，base='./'
       
     # === 部署到 GitHub Pages ===
     - name: Setup Pages
@@ -52,6 +53,11 @@ jobs:
       with:
         force_orphan: true
 
+    # === 构建 Halo 版本 ===
+    - name: Build for Halo
+      run: |
+        DEPLOY_TARGET=halo pnpm run build  # 设置环境变量，使用 base='/SeNav/'
+        
     # === 部署到 Halo ===
     - name: Deploy to Halo Static Pages
       run: |
