@@ -52,7 +52,7 @@ jobs:
       with:
         force_orphan: true
 
-    # === 部署到 Halo (测试) ===
+    # === 部署到 Halo ===
     - name: Deploy to Halo Static Pages
       run: |
         npx halo-static-pages-deploy-cli deploy \
