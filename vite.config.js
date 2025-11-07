@@ -3,6 +3,7 @@ import vue from "@vitejs/plugin-vue";
 import { VitePWA } from "vite-plugin-pwa";
 import viteCompression from "vite-plugin-compression";
 import path from "path";
+import BackgroundManifestPlugin from "./scripts/vite-plugin-background-manifest.mjs";
 
 const deployTarget = process.env.DEPLOY_TARGET || 'github';
 
@@ -11,6 +12,8 @@ export default defineConfig({
   base: deployTarget === 'halo' ? '/SeNav/' : './',
   plugins: [
     vue(),
+    // 开发期间自动维护 public/background/manifest.json
+    BackgroundManifestPlugin(),
     // PWA
     VitePWA({
       registerType: "autoUpdate",

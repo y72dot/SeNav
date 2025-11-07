@@ -224,7 +224,32 @@ pnpm build
 
 | 壁纸选项 | API地址 | 描述 | 特点 |
 |----------|---------|------|------|
-| 本地壁纸 | `/background/bg*.jpg` | 本地静态图片 | 加载速度快，无网络依赖 |
+| 本地壁纸 | `/background/bg*.webp` + `manifest.json` | 本地静态图片（推荐使用WebP） | 加载速度快、体积更小，无网络依赖 |
+
+#### 本地壁纸清单（manifest.json）
+为避免在前端进行“逐个图片探测”的请求，项目在 `public/background/manifest.json` 中维护本地壁纸清单。
+
+示例：
+```
+{
+  "version": 1,
+  "images": [
+    "bg1.webp",
+    "bg2.webp",
+    "bg3.webp"
+  ]
+}
+```
+
+使用说明：
+- 将你的本地壁纸放入 `public/background/` 目录，支持的格式：`webp`、`jpg`、`jpeg`、`png`。文件名建议为 `bg1.*`、`bg2.*`、`bg3.*` ...
+- 将文件名加入 `manifest.json` 的 `images` 数组中；仅会读取上述支持的图片格式。
+- 如果 `manifest.json` 不存在或列表为空，系统会自动回退到在线壁纸（必应）。
+
+自动生成清单（推荐）：
+- 已新增脚本：`pnpm run generate:background-manifest`，会扫描 `public/background` 中的图片（webp/jpg/jpeg/png）并自动生成 `manifest.json`。
+- 该脚本会在 `pnpm dev` 和 `pnpm build` 前自动执行（通过 `predev` / `prebuild` 钩子），确保开发与构建阶段清单最新。
+- 开发阶段已内置 Vite 插件，自动监听 `public/background` 目录文件的新增/删除，实时更新 `manifest.json`。
 | 必应壁纸 | `https://api.dujin.org/bing/` | 必应每日精选壁纸 | 高质量，每日更新 |
 | 随机风景 | `https://picsum.photos/1920/1080` | Picsum随机风景图 | 稳定快速，质量优秀 |
 | 随机动漫 | `https://www.dmoe.cc/random.php` | 樱花API二次元图片 | 动漫风格，内容丰富 |

@@ -26,16 +26,55 @@ const bgUrl = ref(null);
 const imgTimeout = ref(null);
 const emit = defineEmits(["loadComplete"]);
 
-// 壁纸随机数
-// 请依据文件夹内的图片个数修改 Math.random() 后面的第一个数字
-const bgRandom = Math.floor(Math.random() * 3 + 1);
+// 从 manifest.json 读取本地 webp 壁纸列表，避免探测请求
+// public/background/manifest.json 格式示例：
+// { "images": ["bg1.webp", "bg2.webp", "bg3.webp"], "version": 1 }
+const allowedExts = new Set(['.webp', '.jpg', '.jpeg', '.png']);
+
+const loadBackgroundManifest = async () => {
+  try {
+    const res = await fetch(`${import.meta.env.BASE_URL}background/manifest.json`, { cache: 'no-cache' });
+    if (!res.ok) throw new Error('manifest not found');
+    const data = await res.json();
+    let files = [];
+    if (Array.isArray(data)) {
+      files = data;
+    } else if (Array.isArray(data.images)) {
+      files = data.images;
+    }
+    // 只使用允许的图片类型（不再仅限 webp）
+    const imageFiles = files.filter((name) => {
+      if (typeof name !== 'string') return false;
+      const lower = name.toLowerCase();
+      const ext = lower.slice(lower.lastIndexOf('.'));
+      return allowedExts.has(ext);
+    });
+    // 转换为完整 URL
+    const urls = imageFiles.map((name) => `${import.meta.env.BASE_URL}background/${name}`);
+    return urls;
+  } catch (err) {
+    console.warn('读取本地壁纸清单失败，将使用在线壁纸作为回退：', err);
+    return [];
+  }
+};
 
 // 赋值壁纸
-const setBgUrl = () => {
+const setBgUrl = async () => {
   const { backgroundType } = set;
   switch (backgroundType) {
     case 0:
-      bgUrl.value = `${import.meta.env.BASE_URL}background/bg${bgRandom}.jpg`;
+      // 本地壁纸（使用 manifest.json 列表），避免探测请求
+      {
+        const urls = await loadBackgroundManifest();
+        if (urls.length > 0) {
+          const randomUrl = urls[Math.floor(Math.random() * urls.length)];
+          bgUrl.value = randomUrl;
+        } else {
+          // 如果目录下没有 manifest 或列表为空，降级到必应壁纸
+          const isMobile = window.innerWidth < 768;
+          bgUrl.value = `https://api.dujin.org/bing/${isMobile ? "m" : "1920"}.php`;
+        }
+      }
       break;
     case 1: {
       const isMobile = window.innerWidth < 768;
@@ -99,8 +138,8 @@ const imgLoadError = () => {
   bgUrl.value = `https://api.dujin.org/bing/${isMobile ? "m" : "1920"}.php`;
 };
 
-onMounted(() => {
-  setBgUrl();
+onMounted(async () => {
+  await setBgUrl();
 });
 
 onBeforeUnmount(() => {

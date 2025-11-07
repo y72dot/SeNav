@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
+    "predev": "node scripts/generate-background-manifest.mjs",
     "build": "vite build",
+    "prebuild": "node scripts/generate-background-manifest.mjs",
+    "generate:background-manifest": "node scripts/generate-background-manifest.mjs",
     "preview": "vite preview",
     "format": "prettier --write src/",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts,.vue --fix"
