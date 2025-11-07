@@ -302,6 +302,10 @@ const contentStyle = computed(() => {
 // 拖动功能
 const startDrag = (e) => {
   if (!props.draggable) return
+  // 开始拖拽时，将窗口置于最前面，避免因 isDragging 阻断父容器的置顶逻辑
+  if (windowId.value) {
+    windowManager.bringToFront(windowId.value)
+  }
   
   isDragging.value = true
   dragStart.value = {
@@ -319,6 +323,10 @@ const startDrag = (e) => {
 // 最小化按钮拖动功能
 const startMinimizeDrag = (e) => {
   if (!props.draggable) return
+  // 点击左上角移动控件时也置顶，避免父容器的置顶被 isDragging 拦截
+  if (windowId.value) {
+    windowManager.bringToFront(windowId.value)
+  }
   
   isDragging.value = true
   dragStart.value = {
