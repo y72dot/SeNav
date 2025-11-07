@@ -8,6 +8,7 @@
     :close-on-overlay="true"
     :close-on-escape="true"
     content-class="setting-content"
+    :window-type="'setting'"
     :title="'设置'"
     @close="handleClose"
   >

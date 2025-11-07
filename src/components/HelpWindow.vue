@@ -7,6 +7,7 @@
     :min-height="400"
     :close-on-overlay="true"
     :close-on-escape="true"
+    :window-type="'help'"
     content-class="help-content"
     @close="handleClose"
   >
@@ -18,7 +19,7 @@
       
       <div class="help-content-area">
         <div 
-          v-for="(commands, category) in commandsByCategory" 
+          v-for="(commands, category) in commandsToShow" 
           :key="category"
           class="category-section"
         >
@@ -44,6 +45,7 @@
 </template>
 
 <script setup>
+import { ref, computed, watch } from 'vue'
 import FloatingWindow from './FloatingWindow.vue'
 
 const props = defineProps({
@@ -68,6 +70,36 @@ const handleCommandClick = (commandName) => {
   emit('commandClick', commandName)
   // 不再自动关闭帮助窗口，让用户可以继续查看其他命令
 }
+
+// 本地兜底：当传入的 commandsByCategory 为空时，自动从注册表加载命令
+const localCommandsByCategory = ref({})
+const commandsToShow = computed(() => {
+  const hasPropData = props.commandsByCategory && Object.keys(props.commandsByCategory).length > 0
+  return hasPropData ? props.commandsByCategory : localCommandsByCategory.value
+})
+
+// 监听可见性，当窗口显示且无外部数据时，填充本地命令列表
+watch(() => props.visible, async (visible) => {
+  if (!visible) return
+  const hasPropData = props.commandsByCategory && Object.keys(props.commandsByCategory).length > 0
+  if (hasPropData) return
+  try {
+    // 确保系统命令已注册（兼容刷新后未初始化的情况）
+    await import('@/utils/commands')
+    const { getAllCommands } = await import('@/utils/commandRegistry')
+    const allCommands = getAllCommands() || []
+    const grouped = {}
+    allCommands.forEach(cmd => {
+      const category = cmd.category || '其他'
+      if (!grouped[category]) grouped[category] = []
+      grouped[category].push(cmd)
+    })
+    localCommandsByCategory.value = grouped
+  } catch (err) {
+    console.error('加载命令列表失败：', err)
+    localCommandsByCategory.value = {}
+  }
+}, { immediate: true })
 </script>
 
 <style lang="scss" scoped>

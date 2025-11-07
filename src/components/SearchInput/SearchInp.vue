@@ -107,18 +107,18 @@ const searchInputRef = ref(null);
 // 搜索建议子组件
 const suggestionsRef = ref(null);
 
-// 帮助窗口状态
-const helpWindowVisible = ref(false)
+// 帮助窗口状态（持久化）
+const helpWindowVisible = computed(() => windowManager.openedWindows.help)
 const helpCommandsByCategory = ref({});
 
-// 捷径窗口状态
-const shortcutWindowVisible = ref(false);
+// 捷径窗口状态（持久化）
+const shortcutWindowVisible = computed(() => windowManager.openedWindows.shortcut);
 
-// 便签窗口状态
-const noteWindowVisible = ref(false);
+// 便签窗口状态（持久化）
+const noteWindowVisible = computed(() => windowManager.openedWindows.note);
 
-// 设置窗口状态
-const settingWindowVisible = ref(false);
+// 设置窗口状态（持久化）
+const settingWindowVisible = computed(() => windowManager.openedWindows.setting);
 
 // 关闭搜索框
 const closeSearchInput = (check = false) => {
@@ -314,22 +314,22 @@ const handleCommandExecuted = (result) => {
     console.log("📋 显示帮助信息");
     // 设置帮助窗口数据并显示
     helpCommandsByCategory.value = result.data.commandsByCategory || {};
-    helpWindowVisible.value = true;
+    windowManager.setWindowVisibleByType('help', true);
   } 
   // 特殊处理 shortcut 命令
   else if (result.success && result.data && result.data.action === 'show_shortcut_window') {
     console.log("🔗 显示捷径管理窗口");
-    shortcutWindowVisible.value = true;
+    windowManager.setWindowVisibleByType('shortcut', true);
   } 
   // 特殊处理 note 命令
   else if (result.success && result.data && result.data.action === 'show_note_window') {
     console.log("📝 显示便签管理窗口");
-    noteWindowVisible.value = true;
+    windowManager.setWindowVisibleByType('note', true);
   } 
   // 特殊处理 setting 命令
   else if (result.success && result.data && result.data.action === 'show_setting_window') {
     console.log("⚙️ 显示设置窗口");
-    settingWindowVisible.value = true;
+    windowManager.setWindowVisibleByType('setting', true);
   } 
   else if (result.success) {
     $message.success(result.message || "命令执行成功");
@@ -374,23 +374,23 @@ const handleInputBlur = () => {
 
   // 关闭帮助窗口
   const closeHelpWindow = () => {
-    helpWindowVisible.value = false
+    windowManager.setWindowVisibleByType('help', false)
     helpCommandsByCategory.value = {}
   }
 
   // 关闭捷径窗口
   const closeShortcutWindow = () => {
-    shortcutWindowVisible.value = false
+    windowManager.setWindowVisibleByType('shortcut', false)
   }
 
   // 关闭便签窗口
   const closeNoteWindow = () => {
-    noteWindowVisible.value = false
+    windowManager.setWindowVisibleByType('note', false)
   }
 
   // 关闭设置窗口
   const closeSettingWindow = () => {
-    settingWindowVisible.value = false
+    windowManager.setWindowVisibleByType('setting', false)
   }
 
   // 处理帮助窗口中的命令点击

@@ -172,7 +172,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'drag-start', 'drag-end', 'resize-start', 'resize-end', 'pin-change', 'zoom-change'])
+const emit = defineEmits(['close', 'drag-start', 'drag-end', 'resize-start', 'resize-end', 'pin-change', 'zoom-change', 'minimize'])
 
 // 窗口管理store
 const windowManager = windowManagerStore()
@@ -225,6 +225,47 @@ const resizeStart = ref({ x: 0, y: 0, width: 0, height: 0 })
 const zoomStart = ref({ x: 0, y: 0 })
 const zoomLevel = ref(1) // 缩放级别，1为100%
 const initialZoomLevel = ref(1) // 拖拽开始时的缩放级别
+
+// 持久化：窗口布局键与读写
+const layoutKey = computed(() => windowManager.getLayoutKey(props.windowType, props.windowData))
+
+const persistLayout = () => {
+  if (!layoutKey.value) return
+  windowManager.setWindowLayout(layoutKey.value, {
+    x: position.value.x,
+    y: position.value.y,
+    width: size.value.width,
+    height: size.value.height,
+    zoom: zoomLevel.value,
+    minimized: isMinimized.value
+  })
+}
+
+const applySavedLayoutOrCenter = () => {
+  const key = layoutKey.value
+  if (!key) {
+    centerWindow()
+    return
+  }
+  const saved = windowManager.getWindowLayout(key)
+  if (saved) {
+    if (typeof saved.x === 'number' && typeof saved.y === 'number') {
+      position.value = { x: saved.x, y: saved.y }
+    }
+    if (typeof saved.width === 'number' && typeof saved.height === 'number') {
+      size.value = { width: Math.max(props.minWidth, saved.width), height: Math.max(props.minHeight, saved.height) }
+      originalSize.value = { ...size.value }
+    }
+    if (typeof saved.zoom === 'number') {
+      zoomLevel.value = Math.max(0.25, Math.min(3, saved.zoom))
+    }
+    if (typeof saved.minimized === 'boolean') {
+      isMinimized.value = saved.minimized
+    }
+  } else {
+    centerWindow()
+  }
+}
 
 // 计算当前实际显示的窗口尺寸
 const currentDisplaySize = computed(() => {
@@ -311,6 +352,8 @@ const stopDrag = () => {
   document.removeEventListener('mouseup', stopDrag)
   
   emit('drag-end')
+  // 持久化位置
+  persistLayout()
 }
 
 // 调整大小功能
@@ -355,6 +398,8 @@ const stopResize = () => {
   document.removeEventListener('mouseup', stopResize)
   
   emit('resize-end')
+  // 持久化尺寸
+  persistLayout()
 }
 
 // 置顶切换功能
@@ -374,6 +419,8 @@ const minimizeWindow = () => {
       windowManager.updateWindow(windowId.value, { minimized: true })
     }
     emit('minimize', true)
+    // 持久化最小化状态
+    persistLayout()
   }
 }
 
@@ -402,6 +449,8 @@ const expandWindow = () => {
     }
     
     emit('minimize', false)
+    // 持久化最小化状态
+    persistLayout()
   }
 }
 
@@ -441,12 +490,16 @@ const stopZoomDrag = () => {
   isZooming.value = false
   document.removeEventListener('mousemove', handleZoomDrag)
   document.removeEventListener('mouseup', stopZoomDrag)
+  // 持久化缩放
+  persistLayout()
 }
 
 // 重置缩放
 const resetZoom = () => {
   zoomLevel.value = 1
   emit('zoom-change', 1)
+  // 持久化缩放
+  persistLayout()
 }
 
 // 关闭窗口
@@ -512,13 +565,13 @@ const updateSize = () => {
 // 监听props变化
 watch([() => props.width, () => props.height], () => {
   updateSize()
-  centerWindow()
+  applySavedLayoutOrCenter()
 })
 
 watch(() => props.visible, (newVisible) => {
   if (newVisible) {
     updateSize()
-    centerWindow()
+    applySavedLayoutOrCenter()
     // 窗口显示时自动置于最前面
     if (windowId.value) {
       windowManager.bringToFront(windowId.value)
@@ -553,7 +606,7 @@ watch([() => props.title, () => props.subtitle], () => {
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
   updateSize()
-  centerWindow()
+  applySavedLayoutOrCenter()
   
   // 注册窗口到管理器
   windowId.value = windowManager.registerWindow({

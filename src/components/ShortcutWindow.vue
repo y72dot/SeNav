@@ -7,6 +7,7 @@
     :min-height="500"
     :close-on-overlay="true"
     :close-on-escape="true"
+    :window-type="'shortcut'"
     content-class="shortcut-content"
     @close="handleClose"
   >

@@ -7,6 +7,8 @@
     :min-height="300"
     :close-on-overlay="false"
     :close-on-escape="false"
+    :window-type="'iframe'"
+    :window-data="{ id, url }"
     content-class="iframe-content"
     @close="handleClose"
   >
@@ -23,6 +25,10 @@
 import FloatingWindow from './FloatingWindow.vue'
 
 const props = defineProps({
+  id: {
+    type: [Number, String],
+    required: true
+  },
   url: {
     type: String,
     required: true

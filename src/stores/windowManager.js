@@ -21,7 +21,23 @@ export const useWindowManagerStore = defineStore('windowManager', {
     // 时间组件z-index
     timeComponentZIndex: 1,
     // 搜索框聚焦状态
-    isSearchBoxFocused: false
+    isSearchBoxFocused: false,
+    
+    // 持久化：记录静态浮动窗口的可见状态（帮助、捷径、便签、设置）
+    openedWindows: {
+      help: false,
+      shortcut: false,
+      note: false,
+      setting: false,
+    },
+    
+    // 持久化：记录 iframe 浮动窗口列表（支持多窗口）
+    // 仅保存必要信息用于恢复：id、url、visible
+    iframeWindows: [],
+    
+    // 持久化：记录窗口布局（位置、尺寸、缩放、最小化）
+    // 使用统一的键进行索引：static:<type> 或 iframe:<id>
+    windowLayouts: {}
   }),
 
   getters: {
@@ -266,6 +282,60 @@ export const useWindowManagerStore = defineStore('windowManager', {
     },
 
     /**
+     * 设置指定类型的静态浮动窗口可见性（持久化）
+     * @param {('help'|'shortcut'|'note'|'setting')} type
+     * @param {boolean} visible
+     */
+    setWindowVisibleByType(type, visible) {
+      if (type in this.openedWindows) {
+        this.openedWindows[type] = visible
+      } else {
+        console.warn('未知的窗口类型:', type)
+      }
+    },
+
+    /**
+     * 添加一个 iframe 浮动窗口（持久化）
+     * @param {string} url
+     */
+    addIframeWindow(url) {
+      // 根据已存在窗口计算下一个唯一ID，避免刷新后计数器重置导致ID冲突
+      const maxId = this.iframeWindows.length
+        ? Math.max(...this.iframeWindows.map(w => Number(w.id) || 0))
+        : 0
+      const id = maxId + 1
+      this.windowIdCounter = id
+      this.iframeWindows.push({ id, url, visible: true })
+    },
+
+    /**
+     * 关闭并移除一个 iframe 浮动窗口（持久化）
+     * @param {number} id
+     */
+    removeIframeWindowById(id) {
+      const index = this.iframeWindows.findIndex(w => w.id === id)
+      if (index !== -1) {
+        this.iframeWindows.splice(index, 1)
+        // 同步移除该窗口的布局数据
+        const key = `iframe:${id}`
+        if (this.windowLayouts[key]) {
+          delete this.windowLayouts[key]
+        }
+      }
+    },
+
+    /**
+     * 清空所有 iframe 浮动窗口（持久化）
+     */
+    clearIframeWindows() {
+      this.iframeWindows = []
+      // 清理所有 iframe 的布局数据
+      Object.keys(this.windowLayouts).forEach(k => {
+        if (k.startsWith('iframe:')) delete this.windowLayouts[k]
+      })
+    },
+
+    /**
      * 关闭当前聚焦的窗口（z-index最高的窗口）
      * @returns {string|null} 被关闭窗口的ID，如果没有窗口则返回null
      */
@@ -288,6 +358,59 @@ export const useWindowManagerStore = defineStore('windowManager', {
       
       console.log('🎯 没有聚焦的窗口可关闭')
       return null
+    },
+    
+    /**
+     * 生成窗口布局键
+     * @param {string} windowType - 窗口类型（iframe 或静态窗口类型）
+     * @param {Object} windowData - 窗口数据（iframe需要包含id）
+     */
+    getLayoutKey(windowType, windowData = {}) {
+      if (windowType === 'iframe') {
+        const id = windowData?.id
+        if (id === undefined || id === null) {
+          console.warn('iframe 布局需要有效的 id')
+          return null
+        }
+        return `iframe:${id}`
+      }
+      return `static:${windowType}`
+    },
+
+    /**
+     * 设置窗口布局（位置、尺寸、缩放、最小化）
+     * @param {string} key - 由 getLayoutKey 生成的键
+     * @param {Object} layout - { x, y, width, height, zoom, minimized }
+     */
+    setWindowLayout(key, layout) {
+      if (!key) return
+      const prev = this.windowLayouts[key] || {}
+      this.windowLayouts[key] = { ...prev, ...layout }
+    },
+
+    /**
+     * 获取窗口布局
+     * @param {string} key
+     * @returns {Object|undefined}
+     */
+    getWindowLayout(key) {
+      if (!key) return undefined
+      return this.windowLayouts[key]
+    },
+
+    /**
+     * 删除窗口布局
+     * @param {string} key
+     */
+    removeWindowLayout(key) {
+      if (!key) return
+      if (this.windowLayouts[key]) delete this.windowLayouts[key]
     }
+  },
+  // 开启数据持久化：仅持久化窗口打开状态及 iframe 窗口列表
+  persist: {
+    key: 'windowManager',
+    storage: window.localStorage,
+    paths: ['openedWindows', 'iframeWindows', 'windowLayouts']
   }
 })

@@ -105,6 +105,7 @@
   <IframeViewer
     v-for="window in iframeWindows"
     :key="window.id"
+    :id="window.id"
     :url="window.url"
     :visible="window.visible"
     @close="() => closeIframeViewer(window.id)"
@@ -116,6 +117,7 @@ import { NScrollbar } from "naive-ui";
 import { nextTick, ref, watch, computed } from "vue";
 import { statusStore, setStore } from "@/stores";
 import { useWindowManagerStore } from "@/stores/windowManager";
+import { storeToRefs } from "pinia";
 import { getSearchSuggestions } from "@/api";
 import debounce from "@/utils/debounce";
 import identifyInput from "@/utils/identifyInput";
@@ -141,9 +143,8 @@ const commandSuggestions = ref([]);
 // Tab补全相关状态
 const tabCompletionIndex = ref(-1); // 当前选中的命令索引，-1表示未选中
 const isTabCompleting = ref(false); // 是否正在进行Tab补全
-// iframe 相关状态 - 支持多窗口
-const iframeWindows = ref([]);
-let windowIdCounter = 0;
+// iframe 相关状态 - 支持多窗口（持久化）
+const { iframeWindows } = storeToRefs(windowManager);
 // 搜索建议元素
 const specialallResultsRef = ref(null);
 const allResultsRef = ref(null);
@@ -221,18 +222,11 @@ const openIframeViewer = (url = null) => {
   console.log("🖼️ openIframeViewer 被调用，URL：", targetUrl);
   
   if (targetUrl) {
-    // 创建新的窗口对象
-    const newWindow = {
-      id: ++windowIdCounter,
-      url: targetUrl,
-      visible: true
-    };
-    
-    // 添加到窗口数组
-    iframeWindows.value.push(newWindow);
-    console.log("✅ 新iframe窗口已创建，ID：", newWindow.id, "URL：", targetUrl);
+    // 使用窗口管理器的持久化方法添加窗口
+    windowManager.addIframeWindow(targetUrl);
+    console.log("✅ 新iframe窗口已创建，URL：", targetUrl);
     console.log("📊 当前窗口数量：", iframeWindows.value.length);
-    
+
     // 清空搜索框
     searchKeyword.value = null;
   } else {
@@ -242,12 +236,9 @@ const openIframeViewer = (url = null) => {
 
 // 关闭 iframe 查看器 - 支持多窗口
 const closeIframeViewer = (windowId) => {
-  const index = iframeWindows.value.findIndex(window => window.id === windowId);
-  if (index !== -1) {
-    iframeWindows.value.splice(index, 1);
-    console.log("✅ iframe窗口已关闭，ID：", windowId);
-    console.log("📊 剩余窗口数量：", iframeWindows.value.length);
-  }
+  windowManager.removeIframeWindowById(windowId);
+  console.log("✅ iframe窗口已关闭，ID：", windowId);
+  console.log("📊 剩余窗口数量：", iframeWindows.value.length);
 };
 
 // 搜索框联想 - 为命令提示移除延迟，为搜索建议保留少量延迟

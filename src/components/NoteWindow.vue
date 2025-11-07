@@ -7,6 +7,7 @@
     :min-height="450"
     :close-on-overlay="true"
     :close-on-escape="true"
+    :window-type="'note'"
     content-class="note-content"
     @close="handleClose"
   >

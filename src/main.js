@@ -8,6 +8,8 @@ import SvgIcon from "@/components/SvgIcon.vue";
 import App from "@/App.vue";
 // 全局样式
 import "@/style/global.scss";
+// 注册系统命令（确保刷新后命令列表不为空）
+import "@/utils/commands";
 
 // 根组件
 const app = createApp(App);
