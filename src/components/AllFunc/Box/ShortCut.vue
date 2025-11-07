@@ -16,7 +16,7 @@
               :key="item"
               class="shortcut-item"
               @contextmenu="shortCutContextmenu($event, item)"
-              @click="shortCutJump(item.url)"
+              @click="shortCutExecute(item)"
             >
               <span class="name">{{ item.name }}</span>
             </n-grid-item>
@@ -89,8 +89,12 @@
           placeholder="请输入捷径名称"
         />
       </n-form-item>
-      <n-form-item label="站点链接" path="url">
-        <n-input clearable v-model:value="addShortcutValue.url" placeholder="请输入站点链接" />
+      <n-form-item label="快捷内容" path="content">
+        <n-input
+          clearable
+          v-model:value="addShortcutValue.content"
+          placeholder="请输入快捷内容（支持命令、网址、文本、邮箱等）"
+        />
       </n-form-item>
     </n-form>
     <template #footer>
@@ -136,7 +140,7 @@ import {
   NDropdown,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { siteStore, setStore } from "@/stores";
+import { siteStore, setStore, statusStore } from "@/stores";
 import SvgIcon from "@/components/SvgIcon.vue";
 import identifyInput from "@/utils/identifyInput";
 import { onMounted, onBeforeUnmount } from "vue";
@@ -154,6 +158,7 @@ const props = defineProps({
 });
 
 const set = setStore();
+const status = statusStore();
 const site = siteStore();
 const { shortcutData } = storeToRefs(site);
 
@@ -171,6 +176,8 @@ const addShortcutModalType = ref(false); // false 添加 / true 编辑
 const addShortcutValue = ref({
   id: null,
   name: "",
+  // 统一使用 content 保存任意内容；为兼容旧数据保留 url
+  content: "",
   url: "",
 });
 const addShortcutRules = {
@@ -185,14 +192,13 @@ const addShortcutRules = {
     message: "请输入名称",
     trigger: ["input", "blur"],
   },
-  url: {
+  content: {
     required: true,
     validator(rule, value) {
-      if (!value) {
-        return new Error("请输入站点链接");
-      } else if (identifyInput(value) !== "url") {
-        return new Error("请检查是否为正确的网址");
+      if (!value || !String(value).trim()) {
+        return new Error("请输入快捷内容");
       }
+      // 任意内容均可保存，故不再严格校验格式
       return true;
     },
     trigger: ["input", "blur"],
@@ -222,6 +228,7 @@ const addShortcutClose = () => {
   addShortcutValue.value = {
     id: null,
     name: "",
+    content: "",
     url: "",
   };
 };
@@ -236,6 +243,7 @@ const addShortcutModalOpen = () => {
   addShortcutValue.value = {
     id: shortcutMaxID + 1,
     name: "",
+    content: "",
     url: "",
   };
   addShortcutModalType.value = false;
@@ -254,15 +262,17 @@ const addOrEditShortcuts = () => {
       // 是否重复
       const isDuplicate = shortcutData.value?.some(
         (item) =>
-          item.name === addShortcutValue.value.name || item.url === addShortcutValue.value.url,
+          item.name === addShortcutValue.value.name ||
+          (item.content ?? item.url) === (addShortcutValue.value.content || addShortcutValue.value.url),
       );
       if (isDuplicate) {
-        $message.error("新增名称或链接与已有捷径重复");
+        $message.error("新增名称或内容与已有捷径重复");
         return false;
       }
       shortcutData.value.push({
         id: addShortcutValue.value.id,
         name: addShortcutValue.value.name,
+        content: addShortcutValue.value.content,
         url: addShortcutValue.value.url,
       });
       $message.success("捷径添加成功");
@@ -276,7 +286,13 @@ const addOrEditShortcuts = () => {
         return false;
       }
       shortcutData.value[index].name = addShortcutValue.value.name;
-      shortcutData.value[index].url = addShortcutValue.value.url;
+      // 同步更新 content 或 url（保持兼容）
+      if (addShortcutValue.value.content) {
+        shortcutData.value[index].content = addShortcutValue.value.content;
+      }
+      if (addShortcutValue.value.url) {
+        shortcutData.value[index].url = addShortcutValue.value.url;
+      }
       $message.success("捷径编辑成功");
       addShortcutClose();
       return true;
@@ -309,8 +325,11 @@ const shortCutContextmenu = (e, data) => {
   e.preventDefault();
   shortCutDropdownShow.value = false;
   // 写入弹窗数据
-  const { id, name, url } = data;
-  addShortcutValue.value = { id, name, url };
+  const { id, name } = data;
+  // 将老数据的 url 兼容写入到 content
+  const content = data.content ?? data.url ?? "";
+  const url = data.url ?? "";
+  addShortcutValue.value = { id, name, content, url };
   nextTick().then(() => {
     shortCutDropdownShow.value = true;
     shortCutDropdownX.value = e.clientX;
@@ -343,14 +362,35 @@ const shortCutDropdownSelect = (key) => {
   }
 };
 
-// 捷径跳转
-const shortCutJump = (url) => {
-  const urlRegex = /^(https?:\/\/)/i;
-  const urlFormat = urlRegex.test(url) ? url : `//${url}`;
-  if (set.urlJumpType === "href") {
-    window.location.href = urlFormat;
-  } else if (set.urlJumpType === "open") {
-    window.open(urlFormat, "_blank");
+// 统一执行捷径：复用搜索框逻辑，实现多功能捷径
+const shortCutExecute = async (item) => {
+  try {
+    const payload = (item && (item.content ?? item.url ?? item.name)) || "";
+    const value = String(payload).trim();
+    if (!value) {
+      $message.error("该捷径内容为空，无法执行");
+      return;
+    }
+
+    // 将内容写入搜索框并聚焦，提升一致性体验
+    status.setSiteStatus("focus");
+    status.setSearchInputValue(value);
+    nextTick(() => {
+      document.getElementById("main-input")?.focus();
+    });
+
+    // 根据内容类型选择默认动作类型：
+    // text -> 搜索(1)，email -> 邮件(3)，url/ip/domain -> 直接访问(4)，命令 -> 交由命令系统处理
+    const inputType = identifyInput(value);
+    const typeMap = { text: 1, email: 3 };
+    const isDirect = inputType === 'url';
+    const detail = { value, type: isDirect ? 4 : (typeMap[inputType] ?? 1) };
+    // 通过全局事件通知搜索框执行（避免在此重复复杂的UI逻辑）
+    const event = new CustomEvent("snav:exec", { detail });
+    window.dispatchEvent(event);
+  } catch (error) {
+    console.error("执行捷径出错：", error);
+    $message.error("执行捷径出错");
   }
 };
 

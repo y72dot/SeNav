@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, computed } from "vue";
+import { ref, nextTick, computed, onMounted, onBeforeUnmount } from "vue";
 import { statusStore, setStore } from "@/stores";
 import { useWindowManagerStore } from "@/stores/windowManager";
 import SearchEngine from "@/components/SearchInput/SearchEngine.vue";
@@ -226,8 +226,12 @@ const toSearch = (val, type = 1) => {
         break;
       // 直接访问
       case 4: {
-        const urlRegex = /^(https?:\/\/)/i;
-        const url = urlRegex.test(searchFormat) ? searchFormat : `//${searchFormat}`;
+        // 注意：不要对 URL 做整体编码，否则会造成类似 //https%3A... 的非法地址
+        const raw = searchValue;
+        const hasProtocol = /^(https?:\/\/)/i.test(raw);
+        // 域名或 IP（可选端口）用于判断是否可用协议相对URL
+        const looksLikeHost = /^(?:[a-z0-9-]+\.)+[a-z]{2,}|^(?:(?:\d{1,3}\.){3}\d{1,3})(?::\d+)?$/i.test(raw);
+        const url = hasProtocol ? raw : looksLikeHost ? `//${raw}` : `https://${raw}`;
         jumpLink(url);
         break;
       }
@@ -401,6 +405,23 @@ const handleInputBlur = () => {
       status.setSiteStatus("focus")
     })
   }
+
+// 监听来自捷径组件的全局执行事件，复用搜索逻辑
+onMounted(() => {
+  const handler = (e) => {
+    try {
+      const { value, type = 1 } = e.detail || {};
+      handleSearchAction(value, type);
+    } catch (err) {
+      console.error('处理全局执行事件出错：', err);
+    }
+  };
+  window.addEventListener('snav:exec', handler);
+  // 在卸载时移除监听器
+  onBeforeUnmount(() => {
+    window.removeEventListener('snav:exec', handler);
+  });
+});
 </script>
 
 <style lang="scss" scoped>
