@@ -18,27 +18,17 @@
           @after-enter="changeSuggestionsHeights"
           @after-leave="changeSuggestionsHeights"
         >
-          <div v-if="searchKeyword !== null && set.showOtherSuggestions" class="special-result" ref="specialallResultsRef">
-            <!-- iframe 命令建议 -->
-            <div
-              v-if="searchKeywordType === 'iframe' || searchKeywordType === 'iframe-partial'"
-              class="s-result iframe-result"
-              @click.stop="searchKeywordType === 'iframe' ? openIframeViewer() : null"
-            >
-              <SvgIcon iconName="icon-link" />
-              <div class="command-info">
-                <span class="command-name">{{ searchKeywordType === 'iframe' ? '打开网页' : 'iframe 命令' }}</span>
-                <span class="command-desc">
-                  {{ searchKeywordType === 'iframe' ? 
-                     `在浮窗中打开：${getIframeUrl(searchKeyword)}` : 
-                     '输入完整的 /iframe 网址 来打开网页' 
-                  }}
-                </span>
-              </div>
-            </div>
+          <div
+            v-if="
+              searchKeyword !== null &&
+              (set.showCommandSuggestions || set.showIframeSuggestions || set.showQuickTranslate || set.showDirectAccess || set.showShortcutSuggestions)
+            "
+            class="special-result"
+            ref="specialallResultsRef"
+          >
             <!-- 命令建议 -->
             <div
-              v-if="searchKeywordType === 'command' || searchKeywordType === 'command-partial'"
+              v-if="(searchKeywordType === 'command' || searchKeywordType === 'command-partial') && set.showCommandSuggestions"
               class="s-result command-result"
               :class="{ 'tab-selected': isTabCompleting && tabCompletionIndex === index }"
               v-for="(cmd, index) in commandSuggestions"
@@ -49,12 +39,28 @@
               <SvgIcon iconName="icon-code" />
               <div class="command-info">
                 <span class="command-name">{{ cmd.name }}</span>
-                <span class="command-desc">{{ cmd.description }}</span>
+                <span class="command-desc">
+                  {{ cmd.description }}
+                  <template v-if="cmd.usage"> · 用法：{{ cmd.usage }}</template>
+                  <template v-if="cmd.hint"> · {{ cmd.hint }}</template>
+                </span>
+              </div>
+            </div>
+            <!-- 捷径建议（在命令建议之后显示） -->
+            <div v-if="shortcutSuggestions[0] && set.showShortcutSuggestions" class="shortcut-results">
+              <div
+                class="s-result shortcut-result"
+                v-for="(sc, index) in shortcutSuggestions"
+                :key="sc.value + ':' + index"
+                @click.stop="executeShortcutSuggestion(sc)"
+              >
+                <SvgIcon iconName="icon-link" />
+                <span class="text">{{ sc.name ? (sc.name + '：' + sc.value) : sc.value }}</span>
               </div>
             </div>
             <!-- 快捷翻译 -->
             <div
-              v-if="searchKeywordType === 'text'"
+              v-if="searchKeywordType === 'text' && set.showQuickTranslate"
               class="s-result"
               @click.stop="toSearch(keyWord, 2)"
             >
@@ -63,7 +69,7 @@
             </div>
             <!-- 直接访问 -->
             <div
-              v-if="searchKeywordType !== 'text' && searchKeywordType !== 'command' && searchKeywordType !== 'command-partial' && searchKeywordType !== 'iframe' && searchKeywordType !== 'iframe-partial'"
+              v-if="searchKeywordType !== 'text' && searchKeywordType !== 'command' && searchKeywordType !== 'command-partial' && searchKeywordType !== 'iframe' && searchKeywordType !== 'iframe-partial' && set.showDirectAccess"
               class="s-result"
               @click.stop="toSearch(searchKeyword, searchKeywordType === 'email' ? 3 : 4)"
             >
@@ -115,7 +121,7 @@
 <script setup>
 import { NScrollbar } from "naive-ui";
 import { nextTick, ref, watch, computed } from "vue";
-import { statusStore, setStore } from "@/stores";
+import { statusStore, setStore, siteStore } from "@/stores";
 import { useWindowManagerStore } from "@/stores/windowManager";
 import { storeToRefs } from "pinia";
 import { getSearchSuggestions } from "@/api";
@@ -127,6 +133,7 @@ import IframeViewer from "@/components/IframeViewer.vue";
 const set = setStore();
 const status = statusStore();
 const windowManager = useWindowManagerStore();
+const site = siteStore();
 const emit = defineEmits(["toSearch", "commandExecuted", "tabCompletion"]);
 
 // 动态z-index计算
@@ -145,6 +152,9 @@ const tabCompletionIndex = ref(-1); // 当前选中的命令索引，-1表示未
 const isTabCompleting = ref(false); // 是否正在进行Tab补全
 // iframe 相关状态 - 支持多窗口（持久化）
 const { iframeWindows } = storeToRefs(windowManager);
+// 捷径相关数据
+const { shortcutData } = storeToRefs(site);
+const shortcutSuggestions = ref([]);
 // 搜索建议元素
 const specialallResultsRef = ref(null);
 const allResultsRef = ref(null);
@@ -199,6 +209,55 @@ const handleTabCompletion = () => {
 const resetTabCompletion = () => {
   isTabCompleting.value = false;
   tabCompletionIndex.value = -1;
+};
+
+// 计算捷径建议（按权重排序，优先显示）
+const updateShortcutSuggestions = (val, max = 5) => {
+  const q = String(val || '').trim().toLowerCase();
+  if (!q) {
+    shortcutSuggestions.value = [];
+    return;
+  }
+  try {
+    const items = Array.isArray(shortcutData.value) ? shortcutData.value : [];
+    const scored = items.map((item) => {
+      const rawValue = String(item?.content ?? item?.url ?? item?.name ?? '').trim();
+      const name = String(item?.name ?? '').trim();
+      const valueLower = rawValue.toLowerCase();
+      const nameLower = name.toLowerCase();
+      let score = 0;
+      // 命令完整前缀优先
+      if (rawValue.startsWith('/') && valueLower.startsWith(q)) score += 3;
+      // 名称/内容前缀
+      if (nameLower.startsWith(q)) score += 2;
+      if (valueLower.startsWith(q)) score += 2;
+      // 包含匹配降级
+      if (!score) {
+        if (nameLower.includes(q)) score += 1;
+        if (valueLower.includes(q)) score += 1;
+      }
+      return { item, name, value: rawValue, score };
+    }).filter((it) => it.score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, max)
+      .map((it) => ({ name: it.name, value: it.value }));
+    shortcutSuggestions.value = scored;
+  } catch (err) {
+    console.error('计算捷径建议失败：', err);
+    shortcutSuggestions.value = [];
+  }
+};
+
+// 点击捷径建议：根据类型决定默认动作（复用父组件搜索逻辑）
+const executeShortcutSuggestion = (suggestion) => {
+  const value = suggestion?.value ?? '';
+  const inputType = identifyInput(value);
+  const typeMap = { text: 1, email: 3 };
+  const type = inputType === 'url' ? 4 : (typeMap[inputType] ?? 1);
+  emit('toSearch', value, type);
 };
 
 // 获取 iframe URL
@@ -257,9 +316,16 @@ const keywordsSearch = (val) => {
   searchKeyword.value = searchValue;
   // 识别输入类型
   searchKeywordType.value = identifyInput(searchValue);
+  // 计算捷径建议（优先显示）
+  if (set.showShortcutSuggestions) {
+    updateShortcutSuggestions(searchValue);
+    nextTick().then(() => {
+      changeSuggestionsHeights();
+    });
+  }
   
-  // 若为命令或部分命令 - 即时显示，无延迟
-  if ((searchKeywordType.value === 'command' || searchKeywordType.value === 'command-partial') && set.showOtherSuggestions) {
+  // 若为命令或部分命令 - 即时显示，无延迟（受命令建议开关控制）
+  if ((searchKeywordType.value === 'command' || searchKeywordType.value === 'command-partial') && set.showCommandSuggestions) {
     console.log(val + "的命令建议");
     // 获取命令建议
     commandSuggestions.value = getCommandSuggestions(searchValue);
@@ -270,17 +336,8 @@ const keywordsSearch = (val) => {
       changeSuggestionsHeights();
     });
   }
-  // 若为 iframe 命令或部分 iframe 命令 - 即时显示，无延迟
-  else if ((searchKeywordType.value === 'iframe' || searchKeywordType.value === 'iframe-partial') && set.showOtherSuggestions) {
-    console.log(val + "的iframe命令");
-    // 清空其他建议
-    commandSuggestions.value = [];
-    searchSuggestionsData.value = [];
-    // 计算高度
-    nextTick().then(() => {
-      changeSuggestionsHeights();
-    });
-  } else {
+  // 若为 iframe 命令或部分 iframe 命令 - 即时显示，无延迟（受 iframe 开关控制）
+  else {
     // 清空命令建议
     commandSuggestions.value = [];
     // 若为文字，获取搜索建议 - 保留少量延迟
@@ -498,11 +555,16 @@ watch(
       // 判断类型
       const inputType = identifyInput(val);
       searchKeywordType.value = inputType;
+      // 计算捷径建议（优先显示）
+      if (set.showShortcutSuggestions) {
+        updateShortcutSuggestions(val);
+        nextTick().then(() => changeSuggestionsHeights());
+      }
       
-      // 命令类型、command-partial类型、iframe 类型和 iframe-partial 类型立即执行，其他类型使用防抖
-      if ((inputType === 'command' || inputType === 'command-partial' || inputType === 'iframe' || inputType === 'iframe-partial') && set.showOtherSuggestions) {
+      // 命令类型或 iframe 类型立即执行（各自受开关控制），其他类型使用防抖
+      if ((inputType === 'command' || inputType === 'command-partial') && set.showCommandSuggestions) {
         keywordsSearch(val);
-      } else if (inputType !== 'command' && inputType !== 'command-partial' && inputType !== 'iframe' && inputType !== 'iframe-partial' && (set.showSearchSuggestions || set.showOtherSuggestions)) {
+      } else if (inputType !== 'command' && inputType !== 'command-partial' && set.showSearchSuggestions) {
         debouncedSearchSuggestions(val);
       }
     }

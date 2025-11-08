@@ -94,10 +94,38 @@
           </n-card>
           <n-card class="set-item">
             <div class="name">
-              <span class="title">其他搜索建议</span>
-              <span class="tip">是否显示快捷翻译、直接访问、命令建议等</span>
+              <span class="title">命令建议</span>
+              <span class="tip">是否显示以 “/” 开头的命令提示与补全</span>
             </div>
-            <n-switch v-model:value="showOtherSuggestions" :round="false" />
+            <n-switch v-model:value="showCommandSuggestions" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">网页浮窗提示</span>
+              <span class="tip">是否显示 /iframe 命令的快捷打开提示</span>
+            </div>
+            <n-switch v-model:value="showIframeSuggestions" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">快捷翻译</span>
+              <span class="tip">是否显示文字时的快捷翻译入口</span>
+            </div>
+            <n-switch v-model:value="showQuickTranslate" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">直接访问</span>
+              <span class="tip">是否显示网址或邮箱的直接访问/发送入口</span>
+            </div>
+            <n-switch v-model:value="showDirectAccess" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">捷径建议</span>
+              <span class="tip">是否显示来自捷径的数据作为优先建议</span>
+            </div>
+            <n-switch v-model:value="showShortcutSuggestions" :round="false" />
           </n-card>
           <n-card class="set-item">
             <div class="name">
@@ -297,7 +325,11 @@ const {
   use12HourFormat,
   showSuggestions,
   showSearchSuggestions,
-  showOtherSuggestions,
+  showCommandSuggestions,
+  showIframeSuggestions,
+  showQuickTranslate,
+  showDirectAccess,
+  showShortcutSuggestions,
   urlJumpType,
   timeStyle,
 } = storeToRefs(set);

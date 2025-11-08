@@ -44,24 +44,10 @@ const identifyInput = (input) => {
   
   // 如果是命令类型，返回相应的类型
   if (commandResult.type === 'command') {
-    if (commandResult.command) {
-      // 特殊处理 iframe 命令，保持向后兼容
-      if (commandResult.commandName === '/iframe') {
-        return commandResult.isPartial ? 'iframe-partial' : 'iframe';
-      }
-      // 其他命令返回通用命令类型
-      return 'command';
-    }
-    // 未识别的命令仍返回 command
     return 'command';
   }
   
   if (commandResult.type === 'command-partial') {
-    // 特殊处理 iframe 命令的部分匹配
-    if (commandResult.commandName === '/iframe') {
-      return 'iframe-partial';
-    }
-    // 其他命令的部分匹配返回 command-partial
     return 'command-partial';
   }
 

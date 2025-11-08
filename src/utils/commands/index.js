@@ -177,6 +177,7 @@ export const registerSystemCommands = () => {
     type: COMMAND_TYPES.SIMPLE,
     description: '显示所有可用命令的帮助信息',
     usage: '/help',
+    args: [],
     category: '系统',
     examples: ['/help'],
     handler: handleHelpCommand
@@ -190,6 +191,7 @@ export const registerSystemCommands = () => {
     type: COMMAND_TYPES.SIMPLE,
     description: '打开捷径管理窗口',
     usage: '/shortcut',
+    args: [],
     category: '工具',
     examples: ['/shortcut'],
     handler: handleShortcutCommand
@@ -203,6 +205,7 @@ export const registerSystemCommands = () => {
     type: COMMAND_TYPES.SIMPLE,
     description: '打开便签管理窗口',
     usage: '/note',
+    args: [],
     category: '工具',
     examples: ['/note'],
     handler: handleNoteCommand
@@ -216,6 +219,7 @@ export const registerSystemCommands = () => {
     type: COMMAND_TYPES.SIMPLE,
     description: '打开设置窗口',
     usage: '/setting',
+    args: [],
     category: '工具',
     examples: ['/setting'],
     handler: handleSettingCommand
@@ -229,6 +233,9 @@ export const registerSystemCommands = () => {
     type: COMMAND_TYPES.WITH_ARGS,
     description: '在内嵌框架中打开网页',
     usage: '/iframe <网址>',
+    args: [
+      { key: 'url', name: '网址', type: 'url', required: true, hint: '网址' }
+    ],
     category: '网页工具',
     examples: [
       '/iframe https://www.baidu.com',
@@ -247,6 +254,9 @@ export const registerSystemCommands = () => {
     type: COMMAND_TYPES.WITH_ARGS,
     description: '测试命令1',
     usage: '/test [参数]',
+    args: [
+      { key: 'param', name: '参数', type: 'string', required: false, hint: '参数' }
+    ],
     category: '测试',
     examples: [
       '/test hello',
@@ -263,6 +273,9 @@ export const registerSystemCommands = () => {
     type: COMMAND_TYPES.WITH_ARGS,
     description: '测试命令2',
     usage: '/test2 [选项]',
+    args: [
+      { key: 'option', name: '选项', type: 'string', required: false, hint: '选项' }
+    ],
     category: '测试',
     examples: [
       '/test2 -v',

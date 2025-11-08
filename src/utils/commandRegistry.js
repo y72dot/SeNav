@@ -48,6 +48,7 @@ export const registerCommand = (commandConfig) => {
     usage,
     category = '默认',
     examples = [],
+    args = [],
     handler,
     validator
   } = commandConfig;
@@ -65,6 +66,7 @@ export const registerCommand = (commandConfig) => {
     usage,
     category,
     examples,
+    args,
     handler,
     validator
   });
@@ -88,6 +90,9 @@ export const identifyCommand = (input) => {
     return { type: 'text', command: null, isPartial: false };
   }
 
+  const tokens = input.trim().split(/\s+/);
+  const cmdToken = tokens[0] || '';
+
   // 遍历所有注册的命令
   for (const [name, config] of commandRegistry) {
     // 检查完整匹配
@@ -101,7 +106,7 @@ export const identifyCommand = (input) => {
     }
     
     // 检查部分匹配
-    if (config.partialPattern && config.partialPattern.test(input)) {
+    if (config.partialPattern && (config.partialPattern.test(cmdToken) || config.partialPattern.test(cmdToken.toLowerCase()))) {
       return {
         type: 'command-partial',
         command: config,
@@ -131,17 +136,52 @@ export const getCommandSuggestions = (input) => {
 
   const suggestions = [];
   const inputLower = input.toLowerCase();
+  const tokens = input.trim().split(/\s+/);
+  const cmdToken = tokens[0] || '';
+  const cmdTokenLower = cmdToken.toLowerCase();
+  const typedArgs = tokens.length > 1 ? tokens.slice(1) : [];
 
   for (const [name, config] of commandRegistry) {
-    // 检查命令名是否匹配输入
-    if (name.toLowerCase().startsWith(inputLower)) {
+    const nameLower = name.toLowerCase();
+    // 仅根据命令名进行前缀/部分匹配，忽略已输入的参数内容
+    const matchByNamePrefix = nameLower.startsWith(cmdTokenLower);
+    const matchByPartialPattern = config.partialPattern
+      ? (config.partialPattern.test(cmdToken) || config.partialPattern.test(cmdTokenLower))
+      : false;
+    // 如果已经开始输入参数（有空格），则只匹配“命令名完全相等”的情况，避免 /test aaa 出现 /test2
+    const nameMatched = typedArgs.length > 0 ? (nameLower === cmdTokenLower) : (matchByNamePrefix || matchByPartialPattern);
+    if (nameMatched) {
+      // 生成更直观的提示：根据参数定义与已输入内容生成提示语
+      let hint = '';
+      const argsDef = Array.isArray(config.args) ? config.args : [];
+      if (!argsDef.length) {
+        hint = '无参数命令';
+      } else {
+        // 当前需要提示的参数索引（已输入数量）
+        const idx = Math.min(typedArgs.length, argsDef.length - 1);
+        const currArg = argsDef[idx];
+        const label = currArg?.hint || currArg?.name || currArg?.key || '参数';
+        const typed = typedArgs[idx] || '';
+        if ((currArg?.type || '').toLowerCase() === 'url') {
+          let normalized = typed;
+          if (typed && !/^https?:\/\//i.test(typed)) {
+            normalized = 'https://' + typed;
+          }
+          hint = `${label}: ${normalized || '<网址>'}`;
+        } else {
+          hint = `${label}: ${typed || `<${label}>`}`;
+        }
+      }
+
       suggestions.push({
         name,
         description: config.description,
         usage: config.usage,
         category: config.category,
         examples: config.examples,
-        type: config.type
+        type: config.type,
+        args: argsDef,
+        hint
       });
     }
   }
