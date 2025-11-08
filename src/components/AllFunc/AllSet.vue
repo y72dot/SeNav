@@ -310,6 +310,7 @@ import {
 import { storeToRefs } from "pinia";
 import { setStore, statusStore } from "@/stores";
 import { useWindowManagerStore } from "@/stores/windowManager";
+import { backupSetData, recoverSetData } from "@/utils/settings/service";
 import identifyInput from "@/utils/identifyInput";
 
 const set = setStore();
@@ -445,7 +446,8 @@ const backupSite = () => {
     const date = new Date();
     const dateString = date.toISOString().replace(/[:.]/g, "-");
     const fileName = `SeNav_Backup_${dateString}.json`;
-    const jsonData = JSON.stringify(set.$state);
+    // 采用统一备份格式（包含元信息），兼容旧恢复逻辑
+    const jsonData = backupSetData(set.$state);
     const blob = new Blob([jsonData], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -482,8 +484,8 @@ const recoverSite = async () => {
       positiveText: "恢复",
       negativeText: "取消",
       onPositiveClick: async () => {
-        const isSuccess = await set.recoverSiteData(data);
-        if (isSuccess) {
+        const result = recoverSetData(set, data);
+        if (result.success) {
           $message.info("站点恢复成功，即将刷新");
           setTimeout(() => {
             window.location.reload();

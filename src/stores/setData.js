@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { sanitizeSetData } from "@/utils/settings/schema";
 
 const useSetDataStore = defineStore("setData", {
   state: () => {
@@ -70,14 +71,14 @@ const useSetDataStore = defineStore("setData", {
       }
       this.searchEngine = value;
     },
-    // 恢复数据
+    // 恢复数据（带校验与清洗）
     recoverSiteData(data) {
       let isSuccess = false;
       try {
-        for (const key in data) {
-          if (Object.hasOwnProperty.call(data, key)) {
-            const item = data[key];
-            this[key] = item;
+        const sanitized = sanitizeSetData(data)
+        for (const key in sanitized) {
+          if (Object.hasOwnProperty.call(sanitized, key)) {
+            this[key] = sanitized[key]
           }
         }
         isSuccess = true;
