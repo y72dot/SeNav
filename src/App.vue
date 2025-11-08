@@ -90,11 +90,19 @@ const mainContextmenu = (event) => {
 
 // 全局键盘事件
 const mainPressKeyboard = (event) => {
-  // ESC键处理 - 关闭当前聚焦的窗口
+  // ESC键处理 - 关闭当前聚焦的窗口或搜索引擎面板
   if (event.key === 'Escape') {
     const closedWindowId = windowManager.closeFocusedWindow();
     if (closedWindowId) {
       // 如果成功关闭了窗口，阻止默认行为
+      event.preventDefault();
+      return;
+    }
+    // 若无可关闭的浮动窗口，尝试关闭搜索引擎选择面板
+    if (windowManager.openedWindows.engineSelector) {
+      windowManager.setWindowVisibleByType('engineSelector', false);
+      // 同步旧状态字段，保持兼容
+      status.setEngineChangeStatus(false);
       event.preventDefault();
       return;
     }

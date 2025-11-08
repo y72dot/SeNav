@@ -29,6 +29,8 @@ export const useWindowManagerStore = defineStore('windowManager', {
       shortcut: false,
       note: false,
       setting: false,
+      // 搜索框附属组件：搜索引擎选择面板
+      engineSelector: false,
     },
     
     // 持久化：记录 iframe 浮动窗口列表（支持多窗口）
@@ -283,7 +285,8 @@ export const useWindowManagerStore = defineStore('windowManager', {
 
     /**
      * 设置指定类型的静态浮动窗口可见性（持久化）
-     * @param {('help'|'shortcut'|'note'|'setting')} type
+     * 注意：包含搜索框附属组件 engineSelector
+     * @param {('help'|'shortcut'|'note'|'setting'|'engineSelector')} type
      * @param {boolean} visible
      */
     setWindowVisibleByType(type, visible) {

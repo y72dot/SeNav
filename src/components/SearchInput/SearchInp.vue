@@ -32,7 +32,7 @@
         v-model="status.searchInputValue"
         @focus="handleInputFocus"
         @blur="handleInputBlur"
-        @click.stop="status.setEngineChangeStatus(false)"
+        @click.stop="closeEngineSelector"
         @keydown.stop="pressKeyboard"
         @input="handleInput"
       />
@@ -134,6 +134,9 @@ const closeSearchInput = (check = false) => {
       mainElement?.focus();
     });
   }
+  // 同步关闭搜索引擎选择面板
+  windowManager.setWindowVisibleByType('engineSelector', false);
+  // 兼容旧状态字段
   status.setEngineChangeStatus(false);
 };
 
@@ -276,11 +279,21 @@ const pressKeyboard = (event) => {
 };
 
 // 更换搜索引擎
+// 关闭搜索引擎选择面板（输入框点击时触发）
+const closeEngineSelector = () => {
+  windowManager.setWindowVisibleByType('engineSelector', false);
+  status.setEngineChangeStatus(false);
+};
+
+// 更换搜索引擎面板显隐
 const changeEngine = () => {
   status.setSiteStatus("focus", false);
   // 未聚焦点击引擎按钮也需要前置搜索相关组件层级，避免虚化遮罩覆盖
   windowManager.setSearchBoxFocused(true);
-  status.setEngineChangeStatus(!status.engineChangeStatus);
+  const nextVisible = !windowManager.openedWindows.engineSelector;
+  windowManager.setWindowVisibleByType('engineSelector', nextVisible);
+  // 兼容旧状态字段
+  status.setEngineChangeStatus(nextVisible);
 };
 
 // 处理输入事件

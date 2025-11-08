@@ -1,6 +1,10 @@
 <template>
   <Transition name="fadeDown" mode="out-in">
-    <div v-if="status.engineChangeStatus" class="engine-choose" :style="{ zIndex: searchComponentsZIndex, '--search-components-z-index': searchComponentsZIndex }">
+    <div
+      v-if="windowManager.openedWindows.engineSelector && status.siteStatus === 'focus'"
+      class="engine-choose"
+      :style="{ zIndex: searchComponentsZIndex, '--search-components-z-index': searchComponentsZIndex }"
+    >
       <n-scrollbar style="max-height: 44.5vh">
         <n-grid class="all-engine" responsive="screen" cols="2 s:3 m:4 l:4" :x-gap="10" :y-gap="10">
           <n-grid-item
@@ -108,6 +112,9 @@ const changeSearchEngine = (key) => {
   const mainInput = document.getElementById("main-input");
   // 更改状态
   set.setSearchEngine(key);
+  // 关闭搜索引擎选择面板（统一通过 windowManager 管理）
+  windowManager.setWindowVisibleByType('engineSelector', false);
+  // 保持兼容：同步更新旧状态字段
   status.setEngineChangeStatus(false);
   mainInput?.focus();
 };

@@ -71,6 +71,10 @@
               @click="
                 () => {
                   status.setSiteStatus('focus');
+                  // 统一通过 windowManager 控制搜索引擎面板显示
+                  windowManager.setSearchBoxFocused(true);
+                  windowManager.setWindowVisibleByType('engineSelector', true);
+                  // 兼容旧状态字段
                   status.setEngineChangeStatus(true);
                 }
               "
@@ -305,10 +309,12 @@ import {
 } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { setStore, statusStore } from "@/stores";
+import { useWindowManagerStore } from "@/stores/windowManager";
 import identifyInput from "@/utils/identifyInput";
 
 const set = setStore();
 const status = statusStore();
+const windowManager = useWindowManagerStore();
 const {
   themeType,
   backgroundType,
