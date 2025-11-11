@@ -1,9 +1,10 @@
 <template>
   <div class="all-set">
     <n-tabs class="set" size="large" justify-content="space-evenly" animated>
-      <n-tab-pane name="main" tab="基础设置">
+      <!-- 全局外观 -->
+      <n-tab-pane name="appearance" tab="外观">
         <n-scrollbar class="scrollbar">
-          <n-h6 prefix="bar"> 主题与壁纸 </n-h6>
+          <n-h6 prefix="bar"> 主题 </n-h6>
           <n-card class="set-item">
             <div class="name">
               <span class="title">主题类别</span>
@@ -11,13 +12,8 @@
             </div>
             <n-select class="set" v-model:value="themeType" :options="themeTypeOptions" />
           </n-card>
-          <n-card
-            class="set-item cover"
-            :content-style="{
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-            }"
-          >
+          <n-h6 prefix="bar"> 壁纸 </n-h6>
+          <n-card class="set-item cover" :content-style="{ flexDirection: 'column', alignItems: 'flex-start' }">
             <div class="desc">
               <div class="name">
                 <span class="title">壁纸偏好</span>
@@ -25,14 +21,7 @@
               </div>
               <n-space>
                 <Transition name="fade" mode="out-in">
-                  <n-button
-                    v-if="backgroundType !== 0"
-                    strong
-                    secondary
-                    @click="changeBackground(0, true)"
-                  >
-                    恢复默认
-                  </n-button>
+                  <n-button v-if="backgroundType !== 0" strong secondary @click="changeBackground(0, true)">恢复默认</n-button>
                 </Transition>
                 <n-button strong secondary @click="customCoverModal = true">
                   <template v-if="backgroundType === 7" #icon>
@@ -42,107 +31,12 @@
                 </n-button>
               </n-space>
             </div>
-            <n-grid
-              class="cover-selete"
-              responsive="screen"
-              cols="2 s:3 m:4 l:4"
-              :x-gap="16"
-              :y-gap="16"
-            >
-              <n-grid-item
-                v-for="(item, index) in backgroundTypeArr"
-                :key="index"
-                :class="index === backgroundType ? 'item check' : 'item'"
-                @click="changeBackground(index)"
-              >
+            <n-grid class="cover-selete" responsive="screen" cols="2 s:3 m:4 l:4" :x-gap="16" :y-gap="16">
+              <n-grid-item v-for="(item, index) in backgroundTypeArr" :key="index" :class="index === backgroundType ? 'item check' : 'item'" @click="changeBackground(index)">
                 <span class="name" v-html="item.name" />
               </n-grid-item>
             </n-grid>
           </n-card>
-          <n-h6 prefix="bar"> 搜索 </n-h6>
-          <n-card class="set-item">
-            <div class="name">
-              <span class="title">搜索引擎</span>
-              <span class="tip">切换或自定义搜索引擎</span>
-            </div>
-            <n-button
-              strong
-              secondary
-              @click="
-                () => {
-                  status.setSiteStatus('focus');
-                  // 统一通过 windowManager 控制搜索引擎面板显示
-                  windowManager.setSearchBoxFocused(true);
-                  windowManager.setWindowVisibleByType('engineSelector', true);
-                  // 兼容旧状态字段
-                  status.setEngineChangeStatus(true);
-                }
-              "
-            >
-              前往调整
-            </n-button>
-          </n-card>
-          <n-card class="set-item">
-            <div class="name">
-              <span class="title">搜索建议</span>
-              <span class="tip">是否显示搜索建议</span>
-            </div>
-            <n-switch v-model:value="showSuggestions" :round="false" />
-          </n-card>
-          <n-card class="set-item">
-            <div class="name">
-              <span class="title">搜索联想</span>
-              <span class="tip">是否显示搜索联想建议</span>
-            </div>
-            <n-switch v-model:value="showSearchSuggestions" :round="false" />
-          </n-card>
-          <n-card class="set-item">
-            <div class="name">
-              <span class="title">命令建议</span>
-              <span class="tip">是否显示以 “/” 开头的命令提示与补全</span>
-            </div>
-            <n-switch v-model:value="showCommandSuggestions" :round="false" />
-          </n-card>
-          <n-card class="set-item">
-            <div class="name">
-              <span class="title">网页浮窗提示</span>
-              <span class="tip">是否显示 /iframe 命令的快捷打开提示</span>
-            </div>
-            <n-switch v-model:value="showIframeSuggestions" :round="false" />
-          </n-card>
-          <n-card class="set-item">
-            <div class="name">
-              <span class="title">快捷翻译</span>
-              <span class="tip">是否显示文字时的快捷翻译入口</span>
-            </div>
-            <n-switch v-model:value="showQuickTranslate" :round="false" />
-          </n-card>
-          <n-card class="set-item">
-            <div class="name">
-              <span class="title">直接访问</span>
-              <span class="tip">是否显示网址或邮箱的直接访问/发送入口</span>
-            </div>
-            <n-switch v-model:value="showDirectAccess" :round="false" />
-          </n-card>
-          <n-card class="set-item">
-            <div class="name">
-              <span class="title">捷径建议</span>
-              <span class="tip">是否显示来自捷径的数据作为优先建议</span>
-            </div>
-            <n-switch v-model:value="showShortcutSuggestions" :round="false" />
-          </n-card>
-          <n-card class="set-item">
-            <div class="name">
-              <span class="title">跳转方式</span>
-              <span class="tip">全站链接跳转方式</span>
-            </div>
-            <n-select class="set" v-model:value="urlJumpType" :options="urlJumpTypeOptions" />
-          </n-card>
-        </n-scrollbar>
-      </n-tab-pane>
-      <n-tab-pane name="personalization" tab="个性调整">
-        <n-scrollbar class="scrollbar">
-          <n-h6 prefix="bar"> 壁纸 </n-h6>
           <n-card class="set-item">
             <div class="name">
               <span class="title">壁纸遮罩</span>
@@ -155,15 +49,84 @@
               <span class="title">壁纸模糊</span>
               <span class="tip">调整壁纸高斯模糊的程度</span>
             </div>
-            <n-slider
-              class="set"
-              v-model:value="backgroundBlur"
-              :step="0.01"
-              :min="0"
-              :max="10"
-              :tooltip="false"
-            />
+            <n-slider class="set" v-model:value="backgroundBlur" :step="0.01" :min="0" :max="10" :tooltip="false" />
           </n-card>
+        </n-scrollbar>
+      </n-tab-pane>
+
+      <!-- 搜索与建议 -->
+      <n-tab-pane name="search" tab="搜索">
+        <n-scrollbar class="scrollbar">
+          <n-h6 prefix="bar"> 搜索引擎 </n-h6>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">当前搜索引擎：{{ set.searchEngine }}</span>
+              <span class="tip">点击按钮快速切换或自定义</span>
+            </div>
+            <n-space>
+              <n-button strong secondary @click="() => { status.setSiteStatus('focus'); windowManager.setSearchBoxFocused(true); windowManager.setWindowVisibleByType('engineSelector', true); status.setEngineChangeStatus(true); }">前往调整</n-button>
+            </n-space>
+          </n-card>
+
+          
+
+          <n-h6 prefix="bar"> 跳转方式 </n-h6>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">全站链接跳转方式</span>
+            </div>
+            <n-select class="set" v-model:value="urlJumpType" :options="urlJumpTypeOptions" />
+          </n-card>
+
+          <n-h6 prefix="bar"> 建议与联想 </n-h6>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">搜索建议总开关</span>
+            </div>
+            <n-switch v-model:value="showSuggestions" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">搜索联想</span>
+            </div>
+            <n-switch v-model:value="showSearchSuggestions" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">命令建议</span>
+            </div>
+            <n-switch v-model:value="showCommandSuggestions" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">网页浮窗提示</span>
+            </div>
+            <n-switch v-model:value="showIframeSuggestions" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">快捷翻译</span>
+            </div>
+            <n-switch v-model:value="showQuickTranslate" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">直接访问</span>
+            </div>
+            <n-switch v-model:value="showDirectAccess" :round="false" />
+          </n-card>
+          <n-card class="set-item">
+            <div class="name">
+              <span class="title">捷径建议</span>
+            </div>
+            <n-switch v-model:value="showShortcutSuggestions" :round="false" />
+          </n-card>
+        </n-scrollbar>
+      </n-tab-pane>
+
+      <!-- 时间与天气 -->
+      <n-tab-pane name="time" tab="时间天气">
+        <n-scrollbar class="scrollbar">
           <n-h6 prefix="bar"> 天气与时间 </n-h6>
           <n-card class="set-item">
             <div class="name">
@@ -205,7 +168,13 @@
             </div>
             <n-switch v-model:value="use12HourFormat" :round="false" />
           </n-card>
-          <n-h6 prefix="bar"> 搜索框 </n-h6>
+        </n-scrollbar>
+      </n-tab-pane>
+
+      <!-- 搜索框行为 -->
+      <n-tab-pane name="behavior" tab="搜索框">
+        <n-scrollbar class="scrollbar">
+          <n-h6 prefix="bar"> 搜索框行为 </n-h6>
           <n-card class="set-item">
             <div class="name">
               <span class="title">自动收缩</span>
@@ -229,7 +198,9 @@
           </n-card>
         </n-scrollbar>
       </n-tab-pane>
-      <n-tab-pane name="other" tab="其他设置">
+
+      <!-- 备份与恢复、重置 -->
+      <n-tab-pane name="other" tab="数据">
         <n-scrollbar class="scrollbar">
           <n-h6 prefix="bar"> 重置 </n-h6>
           <n-card class="set-item">
@@ -253,13 +224,7 @@
               <span class="title">数据恢复</span>
               <span class="tip">将备份的站点内容进行恢复</span>
             </div>
-            <input
-              ref="recoverRef"
-              type="file"
-              style="display: none"
-              accept=".json"
-              @change="recoverSite"
-            />
+            <input ref="recoverRef" type="file" style="display: none" accept=".json" @change="recoverSite" />
             <n-button strong secondary @click="recoverRef?.click()"> 恢复 </n-button>
           </n-card>
         </n-scrollbar>
