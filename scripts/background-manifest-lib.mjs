@@ -49,8 +49,6 @@ export async function buildManifest(root = process.cwd(), options = {}) {
     const images = sortImages(imageFiles);
 
     const manifest = {
-      version: 1,
-      generatedAt: new Date().toISOString(),
       count: images.length,
       images,
     };
