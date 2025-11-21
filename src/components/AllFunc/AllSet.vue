@@ -12,6 +12,7 @@
             </div>
             <n-select class="set" v-model:value="themeType" :options="themeTypeOptions" />
           </n-card>
+          
           <n-h6 prefix="bar"> 壁纸 </n-h6>
           <n-card class="set-item cover" :content-style="{ flexDirection: 'column', alignItems: 'flex-start' }">
             <div class="desc">
@@ -23,12 +24,15 @@
                 <Transition name="fade" mode="out-in">
                   <n-button v-if="backgroundType !== 0" strong secondary @click="changeBackground(0, true)">恢复默认</n-button>
                 </Transition>
+                <input ref="localImageInputRef" type="file" style="display: none" accept="image/*" @change="chooseLocalImage" />
+                <n-button strong secondary @click="localImageInputRef?.click()">本地图片</n-button>
                 <n-button strong secondary @click="customCoverModal = true">
                   <template v-if="backgroundType === 7" #icon>
                     <SvgIcon iconName="icon-confirm" />
                   </template>
                   {{ backgroundType === 7 ? "已开启自定义" : "自定义" }}
                 </n-button>
+                <n-button v-if="backgroundLocal" strong secondary @click="clearLocalImage">清除本地壁纸</n-button>
               </n-space>
             </div>
             <n-grid class="cover-selete" responsive="screen" cols="2 s:3 m:4 l:4" :x-gap="16" :y-gap="16">
@@ -277,16 +281,18 @@ import { setStore, statusStore } from "@/stores";
 import { useWindowManagerStore } from "@/stores/windowManager";
 import { backupSetData, recoverSetData } from "@/utils/settings/service";
 import identifyInput from "@/utils/identifyInput";
+import { saveImage, deleteImage } from "@/utils/idb";
 
 const set = setStore();
 const status = statusStore();
 const windowManager = useWindowManagerStore();
-const {
-  themeType,
-  backgroundType,
-  backgroundCustom,
-  showBackgroundGray,
-  backgroundBlur,
+  const {
+    themeType,
+    backgroundType,
+    backgroundCustom,
+    backgroundLocal,
+    showBackgroundGray,
+    backgroundBlur,
   smallInput,
   autoFocus,
   autoInputBlur,
@@ -308,6 +314,7 @@ const {
 const recoverRef = ref(null);
 const customCoverModal = ref(false);
 const customCoverUrl = ref("");
+const localImageInputRef = ref(null);
 
 // 壁纸类别
 const backgroundTypeArr = [
@@ -317,7 +324,7 @@ const backgroundTypeArr = [
   { name: "随机动漫", tip: "随机二次元图，随机更换" },
   { name: "随机风景2", tip: "备用风景API，随机更换" },
   { name: "随机二次元2", tip: "备用二次元API，随机更换" },
-  { name: "预留位置", tip: "预留的壁纸选项" },
+  { name: "本地图片", tip: "选择本地图片作为壁纸" },
   { name: "自定义壁纸", tip: "使用自定义链接的壁纸" },
 ];
 
@@ -386,6 +393,38 @@ const setCustomCover = () => {
   } else {
     $message.error("请输入正确的网址");
   }
+};
+
+const chooseLocalImage = async (e) => {
+  const file = e?.target?.files?.[0];
+  if (!file) return;
+  if (!file.type?.startsWith("image/")) {
+    $message.error("请选择图片文件");
+    return;
+  }
+  const maxSize = 50 * 1024 * 1024;
+  if (file.size > maxSize) {
+    $message.error("图片过大，建议 ≤50MB");
+    return;
+  }
+  try {
+    const id = await saveImage(file);
+    backgroundLocal.value = id;
+    backgroundType.value = 6;
+    $message.success("已切换为本地图片，刷新后生效");
+    if (localImageInputRef.value) localImageInputRef.value.value = null;
+  } catch (err) {
+    $message.error("保存图片失败，请重试");
+  }
+};
+
+const clearLocalImage = () => {
+  const id = backgroundLocal.value;
+  backgroundLocal.value = "";
+  if (id && !String(id).startsWith("data:")) {
+    deleteImage(id).catch(() => {});
+  }
+  $message.info("已清除本地壁纸，刷新后生效");
 };
 
 // 站点重置

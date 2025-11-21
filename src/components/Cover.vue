@@ -19,11 +19,13 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { statusStore, setStore } from "@/stores";
+import { getImage } from "@/utils/idb";
 
 const set = setStore();
 const status = statusStore();
 const bgUrl = ref(null);
 const imgTimeout = ref(null);
+const objectUrlRef = ref(null);
 const emit = defineEmits(["loadComplete"]);
 
 // 从 manifest.json 读取本地 webp 壁纸列表，避免探测请求
@@ -97,10 +99,35 @@ const setBgUrl = async () => {
       // 随机二次元2 - 使用CWLM API (备用二次元服务)
       bgUrl.value = "https://api.cwlm.xyz/ecy.php";
       break;
-    case 6:
-      // 预留位置
-      bgUrl.value = "https://api.cwlm.xyz/ecy.php";
+    case 6: {
+      if (set.backgroundLocal) {
+        if (String(set.backgroundLocal).startsWith("data:")) {
+          bgUrl.value = set.backgroundLocal;
+        } else {
+          try {
+            const blob = await getImage(set.backgroundLocal);
+            if (blob) {
+              const url = URL.createObjectURL(blob);
+              objectUrlRef.value = url;
+              bgUrl.value = url;
+            } else {
+              $message.info("未选择本地图片，已临时切换回必应壁纸");
+              const isMobile = window.innerWidth < 768;
+              bgUrl.value = `https://api.dujin.org/bing/${isMobile ? "m" : "1920"}.php`;
+            }
+          } catch (e) {
+            $message.error("读取本地图片失败，已临时切回必应");
+            const isMobile = window.innerWidth < 768;
+            bgUrl.value = `https://api.dujin.org/bing/${isMobile ? "m" : "1920"}.php`;
+          }
+        }
+      } else {
+        $message.info("未选择本地图片，已临时切换回必应壁纸");
+        const isMobile = window.innerWidth < 768;
+        bgUrl.value = `https://api.dujin.org/bing/${isMobile ? "m" : "1920"}.php`;
+      }
       break;
+    }
     case 7:
       // 自定义壁纸
       bgUrl.value = set.backgroundCustom;
@@ -144,6 +171,10 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   clearTimeout(imgTimeout.value);
+  if (objectUrlRef.value) {
+    URL.revokeObjectURL(objectUrlRef.value);
+    objectUrlRef.value = null;
+  }
 });
 </script>
 

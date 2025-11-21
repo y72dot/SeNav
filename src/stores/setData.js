@@ -10,6 +10,7 @@ const useSetDataStore = defineStore("setData", {
       // 0 本地 / 1 必应 / 2 随机风景 / 3 随机动漫 / 4 随机风景2 / 5 随机二次元2 / 6 预留 / 7 自定义
       backgroundType: 1,
       backgroundCustom: "",
+      backgroundLocal: "",
       // 壁纸遮罩
       showBackgroundGray: true,
       // 壁纸模糊

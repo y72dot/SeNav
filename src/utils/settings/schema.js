@@ -8,6 +8,7 @@ export const defaultSetData = {
   themeType: 'light',
   backgroundType: 1,
   backgroundCustom: '',
+  backgroundLocal: '',
   showBackgroundGray: true,
   backgroundBlur: 0,
   searchEngine: 'bing',
@@ -54,6 +55,10 @@ export function sanitizeSetData(input = {}) {
   // 壁纸
   if (isNumber(input.backgroundType)) out.backgroundType = clamp(input.backgroundType, 0, 7)
   if (isString(input.backgroundCustom)) out.backgroundCustom = input.backgroundCustom
+  if (isString(input.backgroundLocal)) {
+    const v = input.backgroundLocal
+    out.backgroundLocal = /^data:image\/[-+a-zA-Z0-9]+;base64,/.test(v) ? v : ''
+  }
   if (isBoolean(input.showBackgroundGray)) out.showBackgroundGray = input.showBackgroundGray
   if (isNumber(input.backgroundBlur)) out.backgroundBlur = clamp(input.backgroundBlur, 0, 10)
 
