@@ -22,17 +22,11 @@
               </div>
               <n-space>
                 <Transition name="fade" mode="out-in">
-                  <n-button v-if="backgroundType !== 0" strong secondary @click="changeBackground(0, true)">恢复默认</n-button>
+                  <n-button v-if="backgroundType !== 0 || backgroundLocal" strong secondary @click="resetWallpaper()">恢复默认</n-button>
                 </Transition>
                 <input ref="localImageInputRef" type="file" style="display: none" accept="image/*" @change="chooseLocalImage" />
                 <n-button strong secondary @click="localImageInputRef?.click()">本地图片</n-button>
-                <n-button strong secondary @click="customCoverModal = true">
-                  <template v-if="backgroundType === 7" #icon>
-                    <SvgIcon iconName="icon-confirm" />
-                  </template>
-                  {{ backgroundType === 7 ? "已开启自定义" : "自定义" }}
-                </n-button>
-                <n-button v-if="backgroundLocal" strong secondary @click="clearLocalImage">清除本地壁纸</n-button>
+                <n-button strong secondary @click="customCoverModal = true">自定义</n-button>
               </n-space>
             </div>
             <n-grid class="cover-selete" responsive="screen" cols="2 s:3 m:4 l:4" :x-gap="16" :y-gap="16">
@@ -393,6 +387,20 @@ const setCustomCover = () => {
   } else {
     $message.error("请输入正确的网址");
   }
+};
+
+const resetWallpaper = () => {
+  $dialog.warning({
+    title: "壁纸恢复",
+    content: "确认恢复默认壁纸并清除本地壁纸（如有）？若当前为自定义壁纸，你的自定义壁纸将丢失！",
+    positiveText: "恢复",
+    negativeText: "取消",
+    onPositiveClick: () => {
+      backgroundType.value = 0;
+      clearLocalImage();
+      $message.info("已恢复为默认壁纸，刷新后生效");
+    },
+  });
 };
 
 const chooseLocalImage = async (e) => {

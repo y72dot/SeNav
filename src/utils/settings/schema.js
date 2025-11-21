@@ -56,8 +56,7 @@ export function sanitizeSetData(input = {}) {
   if (isNumber(input.backgroundType)) out.backgroundType = clamp(input.backgroundType, 0, 7)
   if (isString(input.backgroundCustom)) out.backgroundCustom = input.backgroundCustom
   if (isString(input.backgroundLocal)) {
-    const v = input.backgroundLocal
-    out.backgroundLocal = /^data:image\/[-+a-zA-Z0-9]+;base64,/.test(v) ? v : ''
+    out.backgroundLocal = input.backgroundLocal
   }
   if (isBoolean(input.showBackgroundGray)) out.showBackgroundGray = input.showBackgroundGray
   if (isNumber(input.backgroundBlur)) out.backgroundBlur = clamp(input.backgroundBlur, 0, 10)
