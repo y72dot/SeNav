@@ -166,6 +166,63 @@
             </div>
             <n-switch v-model:value="use12HourFormat" :round="false" />
           </n-card>
+          <n-h6 prefix="bar"> 位置调节 </n-h6>
+          <n-card class="set-item">
+            <div class="desc">
+              <div class="name">
+                <span class="title">时间位置</span>
+                <span class="tip">通过水平/垂直偏移调整时间显示位置</span>
+              </div>
+              <div class="set" style="width: 260px;">
+                <n-h6 prefix="bar"> 水平偏移 </n-h6>
+                <n-slider 
+                  v-model:value="timeOffsetX" 
+                  :step="5" 
+                  :min="-30" 
+                  :max="30" 
+                  :tooltip="false" 
+                />
+              </div>
+              <div class="set" style="width: 260px;">
+                <n-h6 prefix="bar"> 垂直偏移 </n-h6>
+                <n-slider 
+                  v-model:value="timeOffsetY" 
+                  :step="5" 
+                  :min="-30" 
+                  :max="30" 
+                  :tooltip="false" 
+                />
+              </div>
+            </div>
+          </n-card>
+          <n-card class="set-item">
+            <div class="desc">
+              <div class="name">
+                <span class="title">日期位置</span>
+                <span class="tip">通过水平/垂直偏移调整日期显示位置</span>
+              </div>
+              <div class="set" style="width: 260px;">
+                <n-h6 prefix="bar"> 水平偏移 </n-h6>
+                <n-slider 
+                  v-model:value="dateOffsetX" 
+                  :step="5" 
+                  :min="-30" 
+                  :max="30" 
+                  :tooltip="false" 
+                />
+              </div>
+              <div class="set" style="width: 260px;">
+                <n-h6 prefix="bar"> 垂直偏移 </n-h6>
+                <n-slider 
+                  v-model:value="dateOffsetY" 
+                  :step="5" 
+                  :min="-30" 
+                  :max="30" 
+                  :tooltip="false" 
+                />
+              </div>
+            </div>
+          </n-card>
         </n-scrollbar>
       </n-tab-pane>
 
@@ -335,6 +392,10 @@ const windowManager = useWindowManagerStore();
   timeStyle,
   searchBoxOffsetX,
   searchBoxOffsetY,
+  timeOffsetX,
+  timeOffsetY,
+  dateOffsetX,
+  dateOffsetY,
 } = storeToRefs(set);
 const recoverRef = ref(null);
 const customCoverModal = ref(false);

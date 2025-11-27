@@ -35,6 +35,10 @@ export const defaultSetData = {
   // 搜索框位置偏移（px）
   searchBoxOffsetX: 0,
   searchBoxOffsetY: 0,
+  timeOffsetX: 0,
+  timeOffsetY: 0,
+  dateOffsetX: 0,
+  dateOffsetY: 0,
 }
 
 const engineKeys = Object.keys(defaultEngine || {})
@@ -108,6 +112,10 @@ export function sanitizeSetData(input = {}) {
   // 搜索框位置偏移（限制范围，避免过大导致不可见）
   if (isNumber(input.searchBoxOffsetX)) out.searchBoxOffsetX = clamp(input.searchBoxOffsetX, -30, 30)
   if (isNumber(input.searchBoxOffsetY)) out.searchBoxOffsetY = clamp(input.searchBoxOffsetY, -30, 30)
+  if (isNumber(input.timeOffsetX)) out.timeOffsetX = clamp(input.timeOffsetX, -30, 30)
+  if (isNumber(input.timeOffsetY)) out.timeOffsetY = clamp(input.timeOffsetY, -30, 30)
+  if (isNumber(input.dateOffsetX)) out.dateOffsetX = clamp(input.dateOffsetX, -30, 30)
+  if (isNumber(input.dateOffsetY)) out.dateOffsetY = clamp(input.dateOffsetY, -30, 30)
 
   return out
 }

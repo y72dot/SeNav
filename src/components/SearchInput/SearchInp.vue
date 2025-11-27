@@ -107,9 +107,28 @@ const searchTransform = computed(() => {
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const sx = clamp(set.searchBoxOffsetX, -30, 30);
   const sy = clamp(set.searchBoxOffsetY, -30, 30);
-  const x = `${sx}vw`;
-  const y = status.siteStatus === 'focus' ? `calc(${sy}vh - 60px)` : `${sy}vh`;
-  return `translate(${x}, ${y})`;
+  const el = searchAllRef.value;
+  const rect = el ? el.getBoundingClientRect() : null;
+  const w = rect?.width ?? 680;
+  const h = rect?.height ?? 42;
+  const vw = window.innerWidth || 0;
+  const vh = window.innerHeight || 0;
+  const safeX = 60;
+  const safeY = 60;
+  const rangeX = Math.max(0, vw - w - safeX * 2);
+  const rangeY = Math.max(0, vh - h - safeY * 2);
+  const dw = 680;
+  const dh = 42;
+  const mapRangeX = Math.max(0, vw - dw - safeX * 2);
+  const mapRangeY = Math.max(0, vh - dh - safeY * 2);
+  const nx = sx / 30;
+  const ny = sy / 30;
+  const dxTarget = nx * (mapRangeX / 2);
+  const dyTarget = ny * (mapRangeY / 2);
+  const focusShift = status.siteStatus === 'focus' ? 60 : 0;
+  const dx = clamp(dxTarget, -rangeX / 2, rangeX / 2);
+  const dy = clamp(dyTarget - focusShift, -rangeY / 2, rangeY / 2);
+  return `translate(${dx}px, ${dy}px)`;
 });
 
 // 搜索建议子组件

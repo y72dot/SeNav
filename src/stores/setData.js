@@ -58,6 +58,10 @@ const useSetDataStore = defineStore("setData", {
       urlJumpType: "open",
       searchBoxOffsetX: 0,
       searchBoxOffsetY: 0,
+      timeOffsetX: 0,
+      timeOffsetY: 0,
+      dateOffsetX: 0,
+      dateOffsetY: 0,
     };
   },
   actions: {
