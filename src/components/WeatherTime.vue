@@ -15,11 +15,7 @@
   >
     <div
       class="time"
-      @click.stop="
-        status.setSiteStatus(
-          status.siteStatus !== 'normal' && status.siteStatus !== 'focus' ? 'normal' : 'box',
-        )
-      "
+      @click.stop="windowManager.setWindowVisibleByType('setting', true)"
     >
       <span class="hour">{{ timeData.hour ?? "00" }}</span>
       <span class="separator" :key="set.showSeconds">:</span>

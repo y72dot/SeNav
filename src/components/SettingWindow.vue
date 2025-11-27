@@ -3,7 +3,7 @@
     :visible="visible"
     :width="800"
     :height="700"
-    :min-width="600"
+    :min-width="640"
     :min-height="500"
     :close-on-overlay="true"
     :close-on-escape="true"
