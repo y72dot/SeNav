@@ -194,6 +194,35 @@
             </div>
             <n-switch v-model:value="autoInputBlur" :round="false" />
           </n-card>
+          <n-h6 prefix="bar"> 位置调节 </n-h6>
+          <n-card class="set-item">
+            <div class="desc">
+              <div class="name">
+                <span class="title">搜索框位置</span>
+                <span class="tip">通过水平/垂直偏移调整搜索框位置</span>
+              </div>
+              <div class="set" style="width: 260px;">
+                <n-h6 prefix="bar"> 水平偏移 </n-h6>
+                <n-slider 
+                  v-model:value="searchBoxOffsetX" 
+                  :step="15" 
+                  :min="-30" 
+                  :max="30" 
+                  :tooltip="false" 
+                />
+              </div>
+              <div class="set" style="width: 260px;">
+                <n-h6 prefix="bar"> 垂直偏移 </n-h6>
+                <n-slider 
+                  v-model:value="searchBoxOffsetY" 
+                  :step="15" 
+                  :min="-30" 
+                  :max="30" 
+                  :tooltip="false" 
+                />
+              </div>
+            </div>
+          </n-card>
         </n-scrollbar>
       </n-tab-pane>
 
@@ -304,6 +333,8 @@ const windowManager = useWindowManagerStore();
   showShortcutSuggestions,
   urlJumpType,
   timeStyle,
+  searchBoxOffsetX,
+  searchBoxOffsetY,
 } = storeToRefs(set);
 const recoverRef = ref(null);
 const customCoverModal = ref(false);

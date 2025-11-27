@@ -32,6 +32,9 @@ export const defaultSetData = {
   showDirectAccess: true,
   showShortcutSuggestions: true,
   urlJumpType: 'open',
+  // 搜索框位置偏移（px）
+  searchBoxOffsetX: 0,
+  searchBoxOffsetY: 0,
 }
 
 const engineKeys = Object.keys(defaultEngine || {})
@@ -101,6 +104,10 @@ export function sanitizeSetData(input = {}) {
 
   // 跳转方式
   if (isEnum(input.urlJumpType, ['open', 'href'])) out.urlJumpType = input.urlJumpType
+
+  // 搜索框位置偏移（限制范围，避免过大导致不可见）
+  if (isNumber(input.searchBoxOffsetX)) out.searchBoxOffsetX = clamp(input.searchBoxOffsetX, -30, 30)
+  if (isNumber(input.searchBoxOffsetY)) out.searchBoxOffsetY = clamp(input.searchBoxOffsetY, -30, 30)
 
   return out
 }

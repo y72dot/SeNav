@@ -56,6 +56,8 @@ const useSetDataStore = defineStore("setData", {
       // 跳转方式
       // open 新标签页 / href 当前页面
       urlJumpType: "open",
+      searchBoxOffsetX: 0,
+      searchBoxOffsetY: 0,
     };
   },
   actions: {

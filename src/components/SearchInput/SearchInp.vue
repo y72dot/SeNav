@@ -10,7 +10,7 @@
   >
 
     <!-- 主搜索框 -->
-    <div class="all" ref="searchAllRef" @animationend="inputAnimationEnd" :style="{ zIndex: searchBoxZIndex, '--search-box-z-index': searchBoxZIndex }">
+    <div class="all" ref="searchAllRef" @animationend="inputAnimationEnd" :style="{ zIndex: searchBoxZIndex, '--search-box-z-index': searchBoxZIndex, transform: searchTransform }">
       <div class="engine" title="切换搜索引擎" @click="changeEngine">
         <Transition name="fade" mode="out-in">
           <SvgIcon
@@ -103,6 +103,14 @@ const searchAllRef = ref(null);
 const searchBoxZIndex = computed(() => windowManager.searchBoxZIndex);
 const searchComponentsZIndex = computed(() => windowManager.searchComponentsZIndex);
 const searchInputRef = ref(null);
+const searchTransform = computed(() => {
+  const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+  const sx = clamp(set.searchBoxOffsetX, -30, 30);
+  const sy = clamp(set.searchBoxOffsetY, -30, 30);
+  const x = `${sx}vw`;
+  const y = status.siteStatus === 'focus' ? `calc(${sy}vh - 60px)` : `${sy}vh`;
+  return `translate(${x}, ${y})`;
+});
 
 // 搜索建议子组件
 const suggestionsRef = ref(null);
