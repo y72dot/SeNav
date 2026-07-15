@@ -1,68 +1,37 @@
-name: Deploy to GitHub Pages and Halo
+name: Deploy to Server
 
 on:
   push:
-    branches: [ main ]
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: latest
-        
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
-      
-    # === 构建 GitHub Pages 版本 ===
-    - name: Build for GitHub Pages
-      run: pnpm run build  # 使用默认配置，base='./'
-      
-    # === 部署到 GitHub Pages ===
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-      
-    - name: Upload artifact for GitHub Pages
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: ./dist
+      - uses: actions/checkout@v4
 
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
-      with:
-        force_orphan: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
 
-    # === 构建 Halo 版本 ===
-    - name: Build for Halo
-      run: |
-        DEPLOY_TARGET=halo pnpm run build  # 设置环境变量，使用 base='/SeNav/'
-        
-    # === 部署到 Halo ===
-    - name: Deploy to Halo Static Pages
-      run: |
-        npx halo-static-pages-deploy-cli deploy \
-          -e ${{ secrets.HALO_ENDPOINT }} \
-          -i ${{ secrets.HALO_PROJECT_ID }} \
-          -t ${{ secrets.HALO_PAT }} \
-          -f ./dist
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Deploy via rsync
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          rsync -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
+            -rltgoDzvO --delete \
+            dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/senav/releases/${{ github.run_id }}/
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "ln -sfn /var/www/senav/releases/${{ github.run_id }} /var/www/senav/current && ls -dt /var/www/senav/releases/*/ | tail -n +6 | xargs -r rm -rf && sudo systemctl reload nginx"
