@@ -9,6 +9,10 @@
       <span v-if="icp" class="icp" @click="jumpTo('https://beian.miit.gov.cn')">
         {{ icp }}
       </span>
+      <span v-if="gaBeian" class="ga-beian">
+        <img src="https://www.beian.gov.cn/img/ghs.png" style="width:16px;vertical-align:text-bottom;margin-right:2px" />
+        <span @click="jumpTo('http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=' + gaBeianCode)">{{ gaBeian }}</span>
+      </span>
       <span class="about" @click="aboutSiteModal = true">关于</span>
     </div>
     <!-- 关于 -->
@@ -46,6 +50,8 @@ const set = setStore();
 
 // 站点数据
 const icp = import.meta.env.VITE_ICP;
+const gaBeian = import.meta.env.VITE_GA_BEIAN;
+const gaBeianCode = import.meta.env.VITE_GA_BEIAN_CODE;
 const siteName = import.meta.env.VITE_SITE_TITLE;
 const siteAnthor = import.meta.env.VITE_SITE_ANTHOR;
 const copyrightLink = import.meta.env.VITE_SITE_COPYRIGHTLINK;
@@ -95,10 +101,16 @@ const jumpTo = (url) => {
         margin-right: 4px;
       }
     }
-    .icp {
+    .icp,
+    .ga-beian {
       &::before {
         content: "|";
         margin-right: 4px;
+      }
+    }
+    .ga-beian {
+      img {
+        cursor: pointer;
       }
     }
     .about {
